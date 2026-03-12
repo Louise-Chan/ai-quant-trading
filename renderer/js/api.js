@@ -45,7 +45,7 @@ async function request(url, options = {}) {
 }
 
 const api = {
-  get: (url) => request(url, { method: 'GET' }),
+  get: (url, opts) => request(url, { method: 'GET', ...opts }),
   post: (url, body) => request(url, { method: 'POST', body: JSON.stringify(body) }),
   put: (url, body) => request(url, { method: 'PUT', body: JSON.stringify(body) }),
   patch: (url, body) => request(url, { method: 'PATCH', body: JSON.stringify(body) }),
@@ -72,15 +72,15 @@ const api = {
     watchlistWithPositions: () => api.get('/dashboard/watchlist-with-positions'),
     addWatchlist: (symbol) => api.post(`/dashboard/watchlist?symbol=${encodeURIComponent(symbol)}`),
     removeWatchlist: (symbol) => api.delete(`/dashboard/watchlist/${encodeURIComponent(symbol)}`),
-    tickers: (symbols, mode) => api.get(`/dashboard/tickers?symbols=${symbols || ''}${mode ? '&mode=' + mode : ''}`),
+    tickers: (symbols, mode, opts) => api.get(`/dashboard/tickers?symbols=${symbols || ''}${mode ? '&mode=' + mode : ''}`, opts),
   },
   market: {
-    candlesticks: (symbol, interval, from_ts, to_ts, limit) => {
+    candlesticks: (symbol, interval, from_ts, to_ts, limit, opts) => {
       let u = `/market/candlesticks?symbol=${encodeURIComponent(symbol)}&interval=${interval || '1h'}`;
       if (from_ts) u += `&from_ts=${from_ts}`;
       if (to_ts) u += `&to_ts=${to_ts}`;
       u += `&limit=${limit || 300}`;
-      return api.get(u);
+      return api.get(u, opts);
     },
   },
   portfolio: {

@@ -34,11 +34,10 @@ window.initTradingModeSwitcher = async function initTradingModeSwitcher() {
         setLocalMode(mode);
         el.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        // 通知账户页刷新（模拟/实盘切换时实时更新）
-        const frame = document.getElementById('page-frame');
-        if (frame?.contentWindow) {
-          frame.contentWindow.postMessage({ type: 'trading-mode-changed', mode }, '*');
-        }
+        // 通知各子页面刷新（模拟/实盘切换时实时更新）
+        document.querySelectorAll('.page-frame').forEach(f => {
+          if (f.contentWindow) f.contentWindow.postMessage({ type: 'trading-mode-changed', mode }, '*');
+        });
       } catch (e) {
         alert(e.message || '切换失败');
       }

@@ -1,2 +1,2 @@
 /* 子页面共用，引用父级 dashboard.css */
-@import url('../dashboard.css');
+@import url('../../css/dashboard.css');
