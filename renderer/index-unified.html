@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI量化交易平台</title>
+  <link rel="stylesheet" href="css/app-unified.css">
+</head>
+<body class="alpaca-theme">
+  <div id="view-welcome" class="view active">
+    <div class="welcome-card">
+      <h1>AI量化交易平台</h1>
+      <p>面向散户投资者的一站式量化交易服务</p>
+      <div class="welcome-btns">
+        <button id="btn-login" class="btn btn-primary">登录</button>
+        <button id="btn-register" class="btn btn-secondary">注册</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-auth-login" class="view">
+    <div class="auth-card">
+      <div id="backend-status-login" class="backend-status"></div>
+      <button id="btn-retry-login" class="btn-retry hidden" type="button">重新检测</button>
+      <h1>登录</h1>
+      <form id="form-login" class="auth-form">
+        <input type="text" name="username" placeholder="用户名" required>
+        <input type="password" name="password" placeholder="密码" required>
+        <button type="submit" class="btn btn-primary">登录</button>
+      </form>
+      <p id="auth-message-login" class="auth-message"></p>
+      <p class="auth-switch">没有账号？<a href="#" id="link-to-register">去注册</a></p>
+      <button type="button" id="btn-back-login" class="btn-back">返回</button>
+    </div>
+  </div>
+
+  <div id="view-auth-register" class="view">
+    <div class="auth-card">
+      <div id="backend-status-register" class="backend-status"></div>
+      <button id="btn-retry-register" class="btn-retry hidden" type="button">重新检测</button>
+      <h1>注册</h1>
+      <form id="form-register" class="auth-form">
+        <input type="text" name="username" id="register-username" placeholder="用户名" required autocomplete="username">
+        <input type="password" name="password" placeholder="密码" required autocomplete="new-password">
+        <input type="email" name="email" id="register-email" placeholder="邮箱（可选）" autocomplete="email">
+        <button type="submit" class="btn btn-primary">注册</button>
+      </form>
+      <p id="auth-message-register" class="auth-message"></p>
+      <p class="auth-switch">已有账号？<a href="#" id="link-to-login">去登录</a></p>
+      <button type="button" id="btn-back-register" class="btn-back">返回</button>
+    </div>
+  </div>
+
+  <div id="view-main" class="view">
+    <div class="app-layout">
+      <header class="app-header">
+        <div class="header-left">
+          <span class="logo">AI量化交易</span>
+          <span class="header-divider" aria-hidden="true"></span>
+          <div class="trading-mode-switcher" id="trading-mode-switcher"></div>
+        </div>
+        <div class="header-spacer"></div>
+        <div class="header-right">
+          <span id="header-time" class="header-time"></span>
+          <span id="user-name" class="user-name"></span>
+          <button id="btn-logout" class="btn btn-sm">退出</button>
+        </div>
+      </header>
+      <aside class="app-sidebar">
+        <nav class="nav-icons">
+          <a href="#" data-page="dashboard" class="nav-item active" title="仪表盘">
+            <span class="nav-icon">&#8962;</span>
+          </a>
+          <a href="#" data-page="account" class="nav-item" title="账户总览">
+            <span class="nav-icon">&#128176;</span>
+          </a>
+          <a href="#" data-page="strategy" class="nav-item" title="策略中心">
+            <span class="nav-icon">&#9881;</span>
+          </a>
+          <a href="#" data-page="profile" class="nav-item" title="个人中心">
+            <span class="nav-icon">&#128100;</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="app-main">
+        <iframe id="page-dashboard" class="page-frame active" src="pages/dashboard/index.html" data-page="dashboard"></iframe>
+        <iframe id="page-account" class="page-frame" src="pages/account/index.html" data-page="account"></iframe>
+        <iframe id="page-strategy" class="page-frame" src="pages/strategy/index.html" data-page="strategy"></iframe>
+        <iframe id="page-profile" class="page-frame" src="pages/profile/index.html" data-page="profile"></iframe>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/trading-mode-switcher.js"></script>
+  <script src="js/app-unified.js"></script>
+</body>
+</html>

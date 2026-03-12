@@ -1,0 +1,21 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.auth-container { width: 320px; padding: 2rem; background: #161b22; border-radius: 12px; border: 1px solid #30363d; }
+.auth-container h1 { font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center; color: #58a6ff; }
+.auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.auth-tabs .tab { flex: 1; padding: 0.5rem; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer; }
+.auth-tabs .tab.active { background: #238636; border-color: #238636; color: #fff; }
+.auth-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-form input { padding: 0.6rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; }
+.auth-form .btn { padding: 0.6rem; background: #238636; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.auth-form .btn:hover { background: #2ea043; }
+.auth-form.hidden { display: none; }
+.auth-message { margin-top: 1rem; font-size: 0.875rem; min-height: 1.2em; }
+.auth-message.error { color: #f85149; }
+.backend-status { font-size: 0.75rem; padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 1rem; text-align: center; }
+.backend-status.ok { background: #23863633; color: #3fb950; border: 1px solid #238636; }
+.backend-status.fail { background: #f8514933; color: #f85149; border: 1px solid #f85149; }
+.backend-status.checking { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
+.btn-retry { margin: 0 auto 1rem; display: block; padding: 0.4rem 1rem; font-size: 0.8rem; background: #21262d; color: #58a6ff; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; }
+.btn-retry:hover { background: #30363d; }
+.btn-retry.hidden { display: none; }

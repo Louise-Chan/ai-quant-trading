@@ -1,0 +1,79 @@
+/* Alpaca-style light theme - 填满横屏 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; min-width: 100%; max-width: none; overflow: hidden; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+/* Views - 支持窗口拖拽 */
+.view { display: none; height: 100vh; align-items: center; justify-content: center; -webkit-app-region: drag; }
+.view.active { display: flex; }
+
+/* Welcome - 空白区域与窗口控制按钮同色 */
+#view-welcome { background: #ffffff; }
+.welcome-card { background: #fff; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); text-align: center; min-width: 360px; -webkit-app-region: no-drag; }
+.welcome-card h1 { font-size: 1.5rem; color: #1a1a2e; margin-bottom: 0.5rem; }
+.welcome-card p { color: #6c757d; margin-bottom: 2rem; font-size: 0.95rem; }
+.welcome-btns { display: flex; gap: 1rem; justify-content: center; }
+.btn { padding: 0.6rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 500; -webkit-app-region: no-drag; }
+.btn-primary { background: #ffc107; color: #1a1a2e; }
+.btn-primary:hover { background: #e6ac00; }
+.btn-secondary { background: #fff; color: #495057; border: 1px solid #dee2e6; }
+.btn-secondary:hover { background: #f8f9fa; }
+
+/* Auth - 空白区域与窗口控制按钮同色 */
+#view-auth-login, #view-auth-register { background: #ffffff; }
+.auth-card { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); min-width: 360px; -webkit-app-region: no-drag; }
+.auth-card h1 { font-size: 1.25rem; color: #1a1a2e; margin-bottom: 1.5rem; text-align: center; }
+.auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.auth-tabs .tab { flex: 1; padding: 0.5rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; color: #495057; cursor: pointer; -webkit-app-region: no-drag; }
+.auth-tabs .tab.active { background: #ffc107; border-color: #ffc107; color: #1a1a2e; }
+.auth-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-form input { padding: 0.6rem; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; color: #1a1a2e; -webkit-app-region: no-drag; }
+.auth-form input:focus { outline: none; border-color: #ffc107; }
+.auth-message { margin-top: 1rem; font-size: 0.875rem; min-height: 1.2em; }
+.auth-message.error { color: #dc3545; }
+.backend-status { font-size: 0.75rem; padding: 0.4rem; border-radius: 6px; margin-bottom: 1rem; text-align: center; }
+.backend-status.ok { background: #fff8e1; color: #856404; border: 1px solid #ffecb3; }
+.backend-status.fail { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.backend-status.checking { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+.btn-retry { margin: 0 auto 1rem; display: block; padding: 0.4rem 1rem; font-size: 0.8rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; -webkit-app-region: no-drag; }
+.btn-retry:hover { background: #e9ecef; }
+.btn-retry.hidden { display: none; }
+.btn-back { margin-top: 1rem; width: 100%; padding: 0.5rem; background: transparent; border: 1px solid #dee2e6; border-radius: 6px; color: #6c757d; cursor: pointer; -webkit-app-region: no-drag; }
+.btn-back:hover { background: #f8f9fa; }
+.auth-switch { margin-top: 1rem; font-size: 0.9rem; color: #6c757d; text-align: center; }
+.auth-switch a { color: #ffc107; text-decoration: none; -webkit-app-region: no-drag; }
+.auth-switch a:hover { text-decoration: underline; }
+
+/* Main app layout - 填满整个窗口，覆盖 .view 的居中 */
+#view-main { align-items: stretch; justify-content: stretch; width: 100%; height: 100%; }
+#view-main.active { display: grid !important; grid-template-columns: 1fr; grid-template-rows: 1fr; width: 100%; height: 100%; justify-content: stretch; align-content: stretch; }
+.app-layout { display: grid; grid-template-rows: 48px 1fr; grid-template-columns: 64px minmax(0, 1fr); height: 100%; width: 100%; min-width: 0; }
+/* 导航栏：左侧内容 | 弹性间隔 | 右侧内容，右侧预留 156px 避免与窗口控制按钮重叠 */
+.app-header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 0 1.25rem 0 1.5rem; padding-right: max(1.5rem, 156px); background: #fff; border-bottom: 1px solid #e9ecef; box-shadow: 0 1px 2px rgba(0,0,0,0.04); min-height: 48px; -webkit-app-region: drag; }
+.header-left { display: flex; align-items: center; gap: 1.25rem; flex-shrink: 0; }
+.logo { font-weight: 600; color: #1a1a2e; font-size: 0.95rem; white-space: nowrap; }
+.trading-mode-switcher { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.trading-mode-switcher .mode-label { font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
+.trading-mode-switcher .mode-btn { padding: 0.3rem 0.75rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; color: #495057; cursor: pointer; font-size: 0.8rem; -webkit-app-region: no-drag; flex-shrink: 0; }
+.trading-mode-switcher .mode-btn.active { background: #ffc107; border-color: #ffc107; color: #1a1a2e; }
+.trading-mode-switcher .mode-btn:hover:not(.active) { background: #e9ecef; }
+.header-spacer { flex: 1; min-width: 1rem; }
+.header-divider { width: 1px; height: 1.25rem; background: #e2e4e8; margin-right: 0.25rem; flex-shrink: 0; }
+.header-right { display: flex; align-items: center; gap: 1.25rem; flex-shrink: 0; }
+.header-time { font-size: 0.8rem; color: #6c757d; white-space: nowrap; }
+.user-name { font-size: 0.9rem; color: #495057; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-sm { padding: 0.35rem 0.85rem; font-size: 0.85rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; color: #495057; cursor: pointer; -webkit-app-region: no-drag; }
+.btn-sm:hover { background: #e9ecef; }
+
+/* Sidebar - icon style */
+.app-sidebar { background: #fff; border-right: 1px solid #e9ecef; padding: 1rem 0; display: flex; flex-direction: column; align-items: center; -webkit-app-region: no-drag; }
+.nav-icons { display: flex; flex-direction: column; gap: 0.25rem; }
+.nav-item { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; color: #6c757d; text-decoration: none; transition: all 0.2s; }
+.nav-item:hover { background: #f8f9fa; color: #1a1a2e; }
+.nav-item.active { background: #fff8e1; color: #e6ac00; }
+.nav-icon { font-size: 1.25rem; }
+
+/* Main content - 填满可用空间，多 iframe 堆叠保持页面状态（不用 display:none 避免 canvas/图表被释放） */
+.app-main { overflow: auto; background: #f0f2f5; min-width: 0; width: 100%; -webkit-app-region: no-drag; position: relative; }
+.app-main .page-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-height: 100%; min-width: 100%; border: none; background: #fff; display: block; z-index: 0; pointer-events: none; }
+.app-main .page-frame.active { z-index: 1; pointer-events: auto; }

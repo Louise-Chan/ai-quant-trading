@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>个人中心</title>
+  <link rel="stylesheet" href="../../css/strategy.css">
+</head>
+<body>
+  <div class="profile-page">
+    <section class="broker-section">
+      <h2>交易所绑定 (Gate.io)</h2>
+      <div id="broker-status" class="broker-status"></div>
+      <form id="form-bind" class="bind-form">
+        <select name="mode">
+          <option value="real">实盘</option>
+          <option value="simulated">模拟</option>
+        </select>
+        <input type="text" name="api_key" placeholder="API Key" required>
+        <input type="password" name="api_secret" placeholder="API Secret" required>
+        <button type="submit">绑定</button>
+      </form>
+      <p class="bind-hint">提示：若绑定失败，请检查 Gate.io 后台的 API 密钥权限及 IP 白名单设置。</p>
+    </section>
+    <section class="profile-section">
+      <h2>个人信息</h2>
+      <div id="user-info" class="user-info"></div>
+    </section>
+  </div>
+  <script src="../../js/config.js"></script>
+  <script src="../../js/api.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>

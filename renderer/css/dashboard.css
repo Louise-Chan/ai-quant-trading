@@ -1,0 +1,31 @@
+/* Alpaca-style dashboard - 填满 iframe 横屏 */
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; min-width: 100%; max-width: none; background: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a2e; }
+.dashboard-page { padding: 1.5rem 2rem; display: grid; grid-template-columns: minmax(280px, 320px) minmax(0, 1fr); gap: 2rem; background: #f0f2f5; min-height: 100%; width: 100%; min-width: 100%; box-sizing: border-box; }
+.coin-selector, .watchlist-section { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e9ecef; }
+.coin-selector h2, .watchlist-section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1a1a2e; }
+.section-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; }
+.section-header h2 { margin-bottom: 0; }
+.btn-refresh { width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; background: #ffc107; color: #1a1a2e; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+.btn-refresh:hover { background: #e6ac00; }
+.btn-refresh .refresh-icon { width: 16px; height: 16px; }
+.coin-selector input { width: 100%; padding: 0.6rem 0.75rem; margin-bottom: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; color: #1a1a2e; font-size: 0.9rem; }
+.coin-selector input:focus { outline: none; border-color: #ffc107; }
+.coin-list, .watchlist { max-height: 220px; overflow-y: auto; }
+.coin-item, .watch-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f2f5; }
+.coin-item:last-child, .watch-item:last-child { border-bottom: none; }
+.coin-item:hover, .watch-item:hover { background: #f8f9fa; border-radius: 6px; }
+.btn-add, .btn-remove { padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+.btn-add { background: #ffc107; color: #1a1a2e; }
+.btn-add:hover { background: #e6ac00; }
+.btn-remove { background: #fff; color: #dc3545; border: 1px solid #dc3545; }
+.btn-remove:hover { background: #dc3545; color: #fff; }
+.kline-container { margin-top: 1rem; min-height: 320px; background: #fff; border-radius: 12px; padding: 1.25rem; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.06); width: 100%; }
+.kline-interval-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 1rem; }
+.interval-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; color: #495057; cursor: pointer; }
+.interval-btn:hover { background: #e9ecef; }
+.interval-btn.active { background: #ffc107; border-color: #ffc107; color: #1a1a2e; font-weight: 500; }
+.kline-content { min-height: 280px; }
+.kline-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: #1a1a2e; }
+.kline-loading { color: #6c757d; font-size: 0.9rem; }
+.kline-chart-wrap { width: 100%; min-height: 340px; }
+.empty { color: #6c757d; padding: 1rem; font-size: 0.9rem; }

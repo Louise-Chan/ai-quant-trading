@@ -1,0 +1,12 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; }
+.welcome-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.welcome-content { text-align: center; }
+.welcome-content h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #58a6ff; }
+.welcome-content p { margin-bottom: 2rem; color: #8b949e; }
+.welcome-buttons { display: flex; gap: 1rem; justify-content: center; }
+.btn { padding: 0.6rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+.btn-primary { background: #238636; color: #fff; }
+.btn-primary:hover { background: #2ea043; }
+.btn-secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+.btn-secondary:hover { background: #30363d; }
