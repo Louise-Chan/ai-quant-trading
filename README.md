@@ -45,6 +45,31 @@ npm start
 
 **使用顺序**：先启动后端 → 再双击「打开应用.vbs」或运行 start-frontend.bat
 
+> 注意：后端默认端口为 **8081**（README 中若写 8080 请以实际 start-backend.bat 为准）
+
+## 常见问题（拉取后首次运行）
+
+### 注册/登录报错
+
+| 现象 | 可能原因 | 解决方式 |
+|------|----------|----------|
+| `Unexpected token 'I', 'Internal S'... is not valid JSON` | 后端返回了 HTML 错误页（500） | 1. 确保先运行 **start-backend.bat** 启动后端<br>2. 查看后端控制台是否有 Python 报错<br>3. 执行 `pip install -r backend/requirements.txt` 确保依赖完整 |
+| `登录账户或密码错误` | ① 未先注册 ② 密码错误 ③ 后端未正常启动 | 1. 先完成注册<br>2. 确认后端已启动且无报错<br>3. 检查 `backend/ai_quant.db` 是否存在（SQLite 首次启动会自动创建） |
+| `连接失败，请确保后端已启动` | 后端未运行或端口不对 | 1. 运行 start-backend.bat<br>2. 确认端口 8081 未被占用 |
+
+### 依赖问题（bcrypt / passlib）
+
+若后端启动时报 `AttributeError: module 'bcrypt' has no attribute '__about__'`，项目已在 `backend/core/security.py` 中做了兼容。若仍有问题，可尝试：
+
+```bash
+pip install "passlib[bcrypt]==1.7.4" "bcrypt>=4.0.0,<5"
+```
+
+### 数据库
+
+- **SQLite（默认）**：首次运行 `python backend/main.py` 会在 `backend/` 目录下自动创建 `ai_quant.db`
+- **工作目录**：必须从 `backend` 目录启动，或使用 start-backend.bat（会自动 cd 到 backend）
+
 ## 界面说明
 
 - **单窗口**：欢迎、登录、主界面均在同一窗口内切换，不新增窗口

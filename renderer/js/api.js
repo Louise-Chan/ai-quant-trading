@@ -33,7 +33,14 @@ async function request(url, options = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${url}`, { cache: 'no-store', ...options, headers });
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (_) {
+    throw new Error((text || '').includes('Internal Server Error') || (text || '').startsWith('<')
+      ? '后端服务异常，请查看后端控制台日志' : (text && text.length < 80 ? text : '响应格式错误'));
+  }
 
   if (!res.ok) {
     throw new Error(data.message || `HTTP ${res.status}`);
@@ -71,8 +78,12 @@ const api = {
     watchlist: () => api.get('/dashboard/watchlist'),
     watchlistWithPositions: () => api.get('/dashboard/watchlist-with-positions'),
     addWatchlist: (symbol) => api.post(`/dashboard/watchlist?symbol=${encodeURIComponent(symbol)}`),
+    addWatchlistBatch: (symbols) => api.post('/dashboard/watchlist/batch', { symbols }),
     removeWatchlist: (symbol) => api.delete(`/dashboard/watchlist/${encodeURIComponent(symbol)}`),
     tickers: (symbols, mode, opts) => api.get(`/dashboard/tickers?symbols=${symbols || ''}${mode ? '&mode=' + mode : ''}`, opts),
+    smartSelectRules: () => api.get('/dashboard/smart-select-rules'),
+    smartSelect: (body) => api.post('/dashboard/smart-select', body || {}),
+    agentSelect: (body) => api.post('/dashboard/agent-select', body || {}),
   },
   market: {
     candlesticks: (symbol, interval, from_ts, to_ts, limit, opts) => {

@@ -1,6 +1,7 @@
 """FastAPI 应用入口"""
-from fastapi import FastAPI, Depends, Header, Query
+from fastapi import FastAPI, Depends, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from config import get_settings
@@ -28,6 +29,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """未捕获异常统一返回 JSON，避免前端解析 HTML 报错"""
+    import traceback
+    print(f"[ERROR] {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "data": None, "message": str(exc), "code": 500},
+    )
 
 # 注册路由，基础路径 /api/v1
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])

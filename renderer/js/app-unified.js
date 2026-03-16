@@ -116,16 +116,29 @@
     if (msgEl) { msgEl.textContent = text; msgEl.className = 'auth-message ' + (isErr ? 'error' : ''); }
   }
 
+  async function safeJson(res) {
+    const text = await res.text();
+    try {
+      return text ? JSON.parse(text) : {};
+    } catch (_) {
+      const msg = (text || '').trim();
+      if (msg.startsWith('<') || msg.toLowerCase().includes('internal server error')) {
+        throw new Error('后端服务异常，请确保：1) 已运行 start-backend.bat  2) 查看后端控制台错误日志');
+      }
+      throw new Error(msg && msg.length < 80 ? msg : '后端返回异常，请查看后端控制台');
+    }
+  }
+
   async function doLogin(username, password) {
     const base = window.API_BASE || 'http://127.0.0.1:8081/api/v1';
     const res = await fetch(`${base}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-    return res.json();
+    return safeJson(res);
   }
 
   async function doRegister(username, password, email) {
     const base = window.API_BASE || 'http://127.0.0.1:8081/api/v1';
     const res = await fetch(`${base}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, email }) });
-    return res.json();
+    return safeJson(res);
   }
 
   function onAuthSuccess(data) {
@@ -184,7 +197,7 @@
         if (username) params.set('username', username);
         if (email) params.set('email', email);
         const res = await fetch(`${base}/auth/check?${params}`);
-        const data = await res.json();
+        const data = await (async () => { const t = await res.text(); try { return t ? JSON.parse(t) : {}; } catch { return {}; } })();
         if (data?.success && data?.data) {
           const { username_exists, email_exists } = data.data;
           const msgs = [];

@@ -1,11 +1,13 @@
 """仪表盘 API - 选币、自选、行情、自选与模拟账户绑定"""
-from fastapi import APIRouter, Query, Header, Depends
+from fastapi import APIRouter, Query, Header, Depends, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from core.database import get_db
 from core.security import decode_token
 from models.watchlist import Watchlist
 from utils.gate_client import list_currency_pairs, list_tickers
 from services.broker_service import get_broker, get_mode
+from services.rule_engine import apply_rules, get_default_rules
 from services.gate_account_service import get_positions_with_value, get_spot_accounts
 
 router = APIRouter()
@@ -124,3 +126,96 @@ def get_watchlist_with_positions(authorization: str = Header(None), db: Session 
         "mode": m,
     }
     return {"success": True, "data": data, "message": "ok", "code": 200}
+
+
+@router.get("/smart-select-rules")
+def get_smart_select_rules():
+    """获取选币规则默认值，用于调节页面"""
+    return {"success": True, "data": get_default_rules(), "message": "ok", "code": 200}
+
+
+class SmartSelectBody(BaseModel):
+    top_n: int = 10
+    mode: str = "real"
+    min_quote_volume: int | None = None   # 24h 成交额最低（USDT）
+    max_change_24h: float | None = None   # 24h 涨跌幅上限（0.5=50%）
+    min_price: float | None = None        # 最低价格
+
+
+class AgentSelectBody(BaseModel):
+    preference: str | None = None
+    top_n: int = 8
+    mode: str = "real"
+
+
+@router.post("/smart-select")
+def smart_select(body: SmartSelectBody | None = Body(default=None), authorization: str = Header(None), db: Session = Depends(get_db)):
+    """一键选币：规则引擎筛选优质币种"""
+    uid = get_current_user_id(authorization)
+    if not uid:
+        return {"success": False, "data": None, "message": "请先登录", "code": 401}
+    try:
+        mode = (body.mode if body else None) or get_mode(db, uid) or "real"
+        tickers = list_tickers(mode)
+        if not tickers:
+            return {"success": True, "data": {"symbols": [], "source": "rule_engine"}, "message": "ok", "code": 200}
+        rules_override = {}
+        if body:
+            if body.min_quote_volume is not None:
+                rules_override["min_quote_volume"] = body.min_quote_volume
+            if body.max_change_24h is not None:
+                rules_override["max_change_24h"] = body.max_change_24h
+            if body.min_price is not None:
+                rules_override["min_price"] = body.min_price
+        candidates = apply_rules(tickers, mode, rules_override if rules_override else None)
+        top_n = body.top_n if body else 10
+        symbols = [{"symbol": c["symbol"], "reason": c.get("reason", "高流动性"), "score": round(c.get("volume", 0) / 1e6, 2)} for c in candidates[:top_n]]
+        return {"success": True, "data": {"symbols": symbols, "source": "rule_engine"}, "message": "ok", "code": 200}
+    except Exception as e:
+        return {"success": False, "data": None, "message": str(e), "code": 500}
+
+
+@router.post("/agent-select")
+def agent_select(body: AgentSelectBody | None = Body(default=None), authorization: str = Header(None), db: Session = Depends(get_db)):
+    """接入 Agent 选币：AI 分析推荐（暂复用规则引擎，待接入 LLM）"""
+    uid = get_current_user_id(authorization)
+    if not uid:
+        return {"success": False, "data": None, "message": "请先登录", "code": 401}
+    try:
+        mode = (body.mode if body else None) or get_mode(db, uid) or "real"
+        tickers = list_tickers(mode)
+        if not tickers:
+            return {"success": True, "data": {"symbols": [], "summary": "", "source": "ai_agent"}, "message": "ok", "code": 200}
+        candidates = apply_rules(tickers, mode)
+        top_n = body.top_n if body else 8
+        symbols = [{"symbol": c["symbol"], "reason": c.get("reason", "高流动性")} for c in candidates[:top_n]]
+        pref = body.preference if body and body.preference else ""
+        summary = f"根据当前市场流动性，推荐以上 {len(symbols)} 个币种。" + (f"（偏好：{pref}）" if pref else "") + " Agent 完整分析功能开发中。"
+        return {"success": True, "data": {"symbols": symbols, "summary": summary, "source": "ai_agent"}, "message": "ok", "code": 200}
+    except Exception as e:
+        return {"success": False, "data": None, "message": str(e), "code": 500}
+
+
+class BatchWatchlistBody(BaseModel):
+    symbols: list[str]
+
+
+@router.post("/watchlist/batch")
+def batch_add_watchlist(body: BatchWatchlistBody, authorization: str = Header(None), db: Session = Depends(get_db)):
+    """批量加入自选"""
+    uid = get_current_user_id(authorization)
+    if not uid:
+        return {"success": False, "data": None, "message": "请先登录", "code": 401}
+    symbols = [s.strip() for s in (body.symbols or []) if s and s.strip()]
+    if not symbols:
+        return {"success": False, "data": None, "message": "symbols 不能为空", "code": 400}
+    added = []
+    skipped = []
+    for sym in symbols[:50]:  # 最多 50 个
+        if db.query(Watchlist).filter(Watchlist.user_id == uid, Watchlist.symbol == sym).first():
+            skipped.append(sym)
+        else:
+            db.add(Watchlist(user_id=uid, symbol=sym))
+            added.append(sym)
+    db.commit()
+    return {"success": True, "data": {"added": added, "skipped": skipped}, "message": f"已添加 {len(added)} 个", "code": 200}

@@ -5,6 +5,33 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100%; min-width: 100%; 
 .coin-selector h2, .watchlist-section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1a1a2e; }
 .section-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; }
 .section-header h2 { margin-bottom: 0; }
+.coin-selector-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.btn-smart-select, .btn-agent-select { padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+.btn-smart-select { background: #ffc107; color: #1a1a2e; }
+.btn-smart-select:hover { background: #e6ac00; }
+.btn-agent-select { background: #1a1a2e; color: #fff; }
+.btn-agent-select:hover { background: #333; }
+.smart-select-modal-content h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+.smart-select-source { font-size: 0.8rem; color: #6c757d; margin-bottom: 0.5rem; }
+.smart-select-summary { font-size: 0.85rem; color: #495057; margin-bottom: 1rem; }
+.smart-select-list { max-height: 200px; overflow-y: auto; margin-bottom: 1rem; }
+.smart-select-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; cursor: pointer; }
+.smart-select-item input { flex-shrink: 0; }
+.smart-select-item small { color: #6c757d; font-size: 0.8rem; margin-left: auto; }
+.smart-select-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.smart-select-actions .btn-cancel, .smart-select-actions .btn-close { background: #f8f9fa; border: 1px solid #dee2e6; }
+.smart-select-actions .btn-confirm, .smart-select-actions .btn-do-select { background: #ffc107; border: none; }
+.rule-form { margin: 1rem 0; }
+.rule-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.rule-row label { font-size: 0.9rem; color: #495057; }
+.rule-row select { padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #dee2e6; font-size: 0.9rem; min-width: 100px; }
+.smart-select-result-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #f0f2f5; }
+.smart-select-result-item:last-child { border-bottom: none; }
+.smart-select-result-item .symbol { font-weight: 500; min-width: 100px; }
+.smart-select-result-item small { color: #6c757d; font-size: 0.8rem; flex: 1; }
+.smart-select-result-item .btn-add-single { padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #ffc107; border: none; border-radius: 6px; cursor: pointer; color: #1a1a2e; flex-shrink: 0; }
+.smart-select-result-item .btn-add-single:hover:not(:disabled) { background: #e6ac00; }
+.smart-select-result-item .btn-add-single.added, .smart-select-result-item .btn-add-single:disabled { background: #e9ecef; color: #6c757d; cursor: default; }
 .btn-refresh { width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; background: #ffc107; color: #1a1a2e; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
 .btn-refresh:hover { background: #e6ac00; }
 .btn-refresh .refresh-icon { width: 16px; height: 16px; }
