@@ -35,7 +35,10 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         if self.USE_SQLITE:
-            return "sqlite:///./ai_quant.db"
+            # 使用绝对路径，避免工作目录不同导致数据库位置错误
+            db_dir = os.path.dirname(os.path.abspath(__file__))
+            db_path = os.path.join(db_dir, "ai_quant.db")
+            return f"sqlite:///{db_path.replace(os.sep, '/')}"
         return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DATABASE}?charset=utf8mb4"
     
     class Config:

@@ -16,8 +16,11 @@ from utils.gate_client import HOST_SIMULATED, HOST_REAL
 # 创建表（开发环境，MySQL 不可用时跳过）
 try:
     Base.metadata.create_all(bind=engine)
+    db_url = str(engine.url)
+    if "sqlite" in db_url:
+        print(f"[DB] SQLite 路径: {db_url.replace('sqlite:///', '')}")
 except Exception as e:
-    print(f"DB init skip: {e}")
+    print(f"[DB] 初始化失败，请检查 backend 目录可写: {e}")
 
 app = FastAPI(title="AI量化交易平台 API", version="1.0.0")
 settings = get_settings()
