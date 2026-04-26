@@ -1,0 +1,68 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SilentSigma 安装程序</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+  <main class="app">
+    <section class="left">
+      <img class="logo-image" src="./SilentSigmaLogo.png" alt="SilentSigma Logo" />
+      <h1>SilentSigma</h1>
+      <p class="subtitle">AI 量化交易桌面版安装程序</p>
+      <ul>
+        <li>自动安装后端运行环境（Python + 依赖）</li>
+        <li>支持自定义安装路径</li>
+        <li>安装后可直接运行桌面程序</li>
+      </ul>
+    </section>
+
+    <section class="right">
+      <h2 id="wizardTitle">欢迎使用 SilentSigma 安装程序</h2>
+
+      <div id="step-intro" class="step-panel">
+        <p class="desc">
+          SilentSigma 是一款面向数字资产量化交易的桌面应用，集成策略引擎、
+          回测、风险控制和可视化面板。
+        </p>
+        <p class="desc">
+          安装向导将自动完成运行环境部署，并创建桌面快捷方式。点击下方
+          「下一步」继续。
+        </p>
+      </div>
+
+      <div id="step-path" class="step-panel hidden">
+        <label class="label">安装位置</label>
+        <div class="path-row">
+          <input id="installPath" type="text" spellcheck="false" />
+          <button id="pickBtn" class="btn btn-sub">浏览</button>
+        </div>
+        <p class="desc small">建议安装到非系统盘目录，便于后续维护和备份。</p>
+      </div>
+
+      <div id="step-install" class="step-panel hidden">
+        <div class="progress-wrap">
+          <div class="progress-bar"><span id="progressInner"></span></div>
+          <div class="progress-meta">
+            <span id="progressText">等待开始</span>
+            <span id="progressPercent">0%</span>
+          </div>
+        </div>
+        <p id="message" class="message"></p>
+      </div>
+
+      <div class="actions">
+        <button id="prevBtn" class="btn hidden">上一步</button>
+        <button id="nextBtn" class="btn btn-main">下一步</button>
+        <button id="installBtn" class="btn btn-main hidden">安装</button>
+        <button id="cancelBtn" class="btn btn-danger">取消安装</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>

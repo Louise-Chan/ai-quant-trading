@@ -21,10 +21,10 @@ def _parse_gate_error(e: Exception) -> str:
         return "API 密钥无权限或已被限制。请检查 Gate.io 后台的 API 权限设置。"
     # 401 认证失败
     if "401" in msg or "Unauthorized" in msg:
-        return "API Key 或 Secret 错误。模拟账户请确认：1) 创建 Key 时选择「模拟账户」类型 2) 实盘/模拟使用同一地址 api.gateio.ws"
+        return "API Key 或 Secret 错误。模拟账户请确认：1) 创建 Key 时选择「模拟账户」类型 2) 实盘与模拟均使用 Gate 主站 API 根地址（默认 api.gate.com）"
     # 404 或 NOT_FOUND
     if "404" in msg or "not found" in msg.lower():
-        return "接口不存在，请确认使用的 API 地址正确（模拟/实盘均用 api.gateio.ws）"
+        return "接口不存在，请确认使用的 API 地址正确（见后端 gate_client.HOST_REAL / GATE_REAL_API_BASE）"
     return f"API 验证失败: {msg}"
 
 

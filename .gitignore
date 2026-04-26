@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 .venv/
 venv/
 env/
@@ -9,9 +9,11 @@ __pycache__/
 .Python
 *.egg-info/
 .eggs/
-dist/
-build/
 *.egg
+# 注意：dist/ 是 electron-builder 输出目录，需要忽略
+dist/
+# 便携 Python 运行时（由 scripts/prepare-python-bundle.ps1 生成，按需重做）
+python_runtime/
 
 # Node.js / Electron
 node_modules/
@@ -64,3 +66,6 @@ htmlcov/
 *.temp
 *.bak
 *.cache
+
+dist-installer-gui/
+installer_gui/payload/SilentSigma-Core-Setup.exe

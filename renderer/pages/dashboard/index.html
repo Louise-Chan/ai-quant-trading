@@ -11,48 +11,279 @@
   <div class="dashboard-page">
     <section class="coin-selector">
       <div class="section-header">
-        <h2>选币</h2>
+        <h2>筛选</h2>
         <div class="coin-selector-actions">
-          <button class="btn-smart-select" id="btn-smart-select" type="button">选币</button>
-          <button class="btn-agent-select" id="btn-agent-select" type="button">接入Agent</button>
-          <button class="btn-refresh" id="btn-refresh-coins" type="button" title="刷新" aria-label="刷新">
+          <button class="btn-smart-select" id="btn-smart-select" type="button">筛选</button>
+          <button class="btn-agent-select" id="btn-agent-select" type="button">Agent筛选</button>
+        </div>
+      </div>
+      <div class="market-quote-panel" aria-label="行情标的">
+        <div class="market-quote-toolbar">
+          <div class="market-quote-tabs" role="tablist">
+            <button type="button" class="market-tab active" data-market="spot" role="tab" aria-selected="true">现货</button>
+            <button type="button" class="market-tab" data-market="futures" role="tab" aria-selected="false">合约</button>
+          </div>
+          <div class="market-search-wrap">
+            <span class="market-search-icon" aria-hidden="true">⌕</span>
+            <input type="search" id="coin-search" class="market-search-input" placeholder="搜索标的" autocomplete="off" enterkeyhint="search" />
+          </div>
+          <button class="btn-refresh" id="btn-refresh-coins" type="button" title="刷新列表" aria-label="刷新列表">
             <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
           </button>
         </div>
+        <div class="market-table-head market-table-head--symbols" aria-hidden="true">
+          <span class="col-symbol">标的</span>
+          <span class="col-action">操作</span>
+        </div>
+        <div id="coin-list" class="coin-list market-table-body" role="listbox" aria-label="标的列表"></div>
       </div>
-      <input type="text" id="coin-search" placeholder="搜索交易对">
-      <div id="coin-list" class="coin-list"></div>
     </section>
     <section class="watchlist-section">
-      <div class="section-header">
-        <h2>自选币</h2>
-        <button class="btn-refresh" id="btn-refresh-watchlist" type="button" title="刷新" aria-label="刷新">
-          <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
-        </button>
-      </div>
-      <div id="watchlist" class="watchlist"></div>
-      <div id="kline-container" class="kline-container">
-        <div id="kline-interval-bar" class="kline-interval-bar" style="display:none;">
-          <button class="interval-btn" data-interval="1m">1分钟</button>
-          <button class="interval-btn" data-interval="15m">15分钟</button>
-          <button class="interval-btn" data-interval="1h">1小时</button>
-          <button class="interval-btn" data-interval="4h">4小时</button>
-          <button class="interval-btn" data-interval="1d">1日</button>
-          <button class="interval-btn" data-interval="7d">1周</button>
-          <button class="interval-btn" data-interval="30d">1月</button>
-          <span id="kline-realtime-price" class="kline-realtime-price"></span>
-          <button class="btn-refresh" id="btn-refresh-kline" type="button" title="刷新" aria-label="刷新">
-            <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
-          </button>
+      <div class="wl-main-row">
+        <div class="wl-col-left">
+          <div class="wl-watchlist-wrap">
+            <div class="section-header">
+              <h2>自选</h2>
+              <button class="btn-refresh" id="btn-refresh-watchlist" type="button" title="刷新" aria-label="刷新">
+                <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <div id="watchlist" class="watchlist"></div>
+          </div>
+          <div class="kline-stack">
+            <div id="kline-container" class="kline-container">
+              <div id="kline-interval-bar" class="kline-interval-bar" style="display:none;">
+                <button class="interval-btn" data-interval="1m">1分钟</button>
+                <button class="interval-btn" data-interval="15m">15分钟</button>
+                <button class="interval-btn" data-interval="1h">1小时</button>
+                <button class="interval-btn" data-interval="4h">4小时</button>
+                <button class="interval-btn" data-interval="1d">1日</button>
+                <button class="interval-btn" data-interval="7d">1周</button>
+                <button class="interval-btn" data-interval="30d">1月</button>
+                <span id="kline-realtime-price" class="kline-realtime-price"></span>
+                <button type="button" class="btn-refresh" id="btn-refresh-kline" title="刷新" aria-label="刷新">
+                  <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
+                </button>
+              </div>
+              <div id="kline-content" class="kline-content"><p class="empty">点击行情列表或自选查看 K 线</p></div>
+            </div>
+          </div>
+          <div class="trading-ledger-panel" id="trading-ledger-panel" aria-label="委托与资产">
+            <div class="ledger-tabs">
+              <button type="button" class="ledger-tab active" data-ledger-tab="open">当前委托</button>
+              <button type="button" class="ledger-tab" data-ledger-tab="history">历史委托</button>
+              <button type="button" class="ledger-tab" data-ledger-tab="trades">成交记录</button>
+              <button type="button" class="ledger-tab" data-ledger-tab="assets">资产</button>
+            </div>
+            <div class="ledger-toolbar">
+              <div class="ledger-type-filters" id="ledger-type-filters">
+                <button type="button" class="ledger-chip active" data-otype="all">全部</button>
+                <button type="button" class="ledger-chip" data-otype="limit">限价</button>
+                <button type="button" class="ledger-chip" data-otype="market">市价</button>
+              </div>
+              <label class="ledger-check-label"><input type="checkbox" id="ledger-filter-symbol" /> 仅当前市场</label>
+              <button type="button" class="btn-refresh" id="btn-refresh-ledger" title="刷新" aria-label="刷新">
+                <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <div id="ledger-table-wrap" class="ledger-table-wrap">
+              <p class="ledger-placeholder">加载中…</p>
+            </div>
+          </div>
         </div>
-        <div id="kline-content" class="kline-content"><p class="empty">点击自选币查看 K 线</p></div>
+        <div class="wl-col-right">
+          <aside class="quick-trade-panel" id="quick-trade-panel" aria-label="快捷下单">
+            <div class="qt-spot-bar">
+              <span class="qt-spot-title" id="qt-instrument-label">现货</span>
+              <button type="button" class="btn-qt-close-all" id="btn-qt-close-all" title="撤销当前标的全部现货挂单并市价卖出基础币，并停止止盈止损跟踪" disabled>一键平仓</button>
+            </div>
+            <div class="qt-card-tabs" role="tablist" aria-label="买方或卖方快捷下单">
+              <button type="button" class="qt-card-tab active" id="qt-tab-buy" data-qt-tab="buy" role="tab" aria-selected="true">买</button>
+              <button type="button" class="qt-card-tab" id="qt-tab-sell" data-qt-tab="sell" role="tab" aria-selected="false">卖</button>
+            </div>
+            <div class="qt-market-row">
+              <span class="qt-market-lbl">市场价格</span>
+              <span class="qt-market-val" id="qt-market-price">--</span>
+            </div>
+            <div class="qt-otype-row">
+              <span class="qt-otype-label">订单类型</span>
+              <select id="qt-order-type" class="qt-select qt-select--inline" aria-label="订单类型">
+                <option value="limit">限价</option>
+                <option value="market">市价</option>
+              </select>
+            </div>
+            <div class="qt-block" id="qt-price-block">
+              <label class="qt-lbl" for="qt-price">委托价</label>
+              <div class="qt-input-line">
+                <button type="button" class="qt-step-btn" data-qt-step="qt-price" data-step="-1" aria-label="减价">−</button>
+                <div class="qt-suffix-wrap">
+                  <input type="text" id="qt-price" class="qt-inp" inputmode="decimal" autocomplete="off" />
+                  <span class="qt-unit">USDT</span>
+                </div>
+                <button type="button" class="qt-step-btn" data-qt-step="qt-price" data-step="1" aria-label="加价">+</button>
+              </div>
+            </div>
+            <div class="qt-block">
+              <label class="qt-lbl" for="qt-amount">数量</label>
+              <div class="qt-input-line qt-input-line--single">
+                <div class="qt-suffix-wrap qt-suffix-wrap--grow">
+                  <input type="text" id="qt-amount" class="qt-inp" inputmode="decimal" autocomplete="off" />
+                  <span class="qt-unit" id="qt-base-unit">—</span>
+                </div>
+              </div>
+            </div>
+            <div class="qt-slider-section">
+              <div class="qt-slider-pct-row" aria-live="polite">
+                <span id="qt-pct-num">0</span><span class="qt-slider-pct-sym">%</span>
+              </div>
+              <div class="qt-slider-visual" id="qt-slider-visual">
+                <input type="range" id="qt-slider-pct" class="qt-range" min="0" max="100" step="1" value="0" aria-valuetext="0%" />
+                <div class="qt-slider-ticks" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+            <div class="qt-block">
+              <label class="qt-lbl" for="qt-usdt">交易额</label>
+              <div class="qt-input-line qt-input-line--single">
+                <div class="qt-suffix-wrap qt-suffix-wrap--grow">
+                  <input type="text" id="qt-usdt" class="qt-inp" inputmode="decimal" autocomplete="off" />
+                  <span class="qt-unit">USDT</span>
+                </div>
+              </div>
+            </div>
+            <label class="qt-check-row">
+              <input type="checkbox" id="qt-enable-bracket" />
+              <span>触发止盈止损</span>
+            </label>
+            <div class="qt-bracket-fields" id="qt-bracket-fields" hidden>
+              <div class="qt-tp-sl-row">
+                <div class="qt-block qt-block--half">
+                  <label class="qt-lbl" for="qt-tp">止盈价</label>
+                  <div class="qt-suffix-wrap qt-suffix-wrap--grow">
+                    <input type="text" id="qt-tp" class="qt-inp" inputmode="decimal" autocomplete="off" />
+                    <span class="qt-unit">USDT</span>
+                  </div>
+                </div>
+                <div class="qt-block qt-block--half">
+                  <label class="qt-lbl" for="qt-sl">止损价</label>
+                  <div class="qt-suffix-wrap qt-suffix-wrap--grow">
+                    <input type="text" id="qt-sl" class="qt-inp" inputmode="decimal" autocomplete="off" />
+                    <span class="qt-unit">USDT</span>
+                  </div>
+                </div>
+              </div>
+              <div class="qt-block qt-rr-block">
+                <label class="qt-lbl" for="qt-rr">盈亏比</label>
+                <input type="text" id="qt-rr" class="qt-inp qt-inp--rr" list="qt-rr-dl" autocomplete="off" value="2:1" />
+                <datalist id="qt-rr-dl">
+                  <option value="2:1"></option>
+                  <option value="1:1"></option>
+                  <option value="3:1"></option>
+                  <option value="4:1"></option>
+                  <option value="5:1"></option>
+                  <option value="6:1"></option>
+                  <option value="8:1"></option>
+                  <option value="10:1"></option>
+                </datalist>
+              </div>
+            </div>
+            <div class="qt-balance-rows qt-balance-rows--solo">
+              <div class="qt-bal-row qt-bal-row--label-right">
+                <span class="qt-bal-values">
+                  <span class="qt-bal-val" id="qt-avail">--</span>
+                  <span class="qt-bal-unit" id="qt-avail-unit">USDT</span>
+                  <button type="button" class="qt-deposit-plus" disabled title="充值" aria-label="充值">+</button>
+                </span>
+                <span class="qt-bal-lbl">可用</span>
+              </div>
+              <div class="qt-bal-row qt-bal-row--label-right" id="qt-row-max-buy">
+                <span class="qt-bal-values">
+                  <span class="qt-bal-val" id="qt-max-base">--</span>
+                  <span class="qt-bal-unit" id="qt-max-base-unit">—</span>
+                </span>
+                <span class="qt-bal-lbl">最大可买</span>
+              </div>
+              <div class="qt-bal-row qt-bal-row--label-right" id="qt-row-max-sell" hidden>
+                <span class="qt-bal-values">
+                  <span class="qt-bal-val" id="qt-max-sell">--</span>
+                  <span class="qt-bal-unit" id="qt-max-sell-unit">—</span>
+                </span>
+                <span class="qt-bal-lbl">最大可卖</span>
+              </div>
+            </div>
+            <div class="quick-trade-actions">
+              <button type="button" class="btn-qt-submit btn-qt-submit--buy" id="btn-qt-submit">买入 —</button>
+            </div>
+          </aside>
+          <aside class="order-audit-panel" id="order-audit-panel" aria-label="订单审核">
+            <div class="order-audit-header">
+              <h3>订单审核</h3>
+              <p class="order-audit-hint">点击<strong>开始交易</strong>后，将自动对<strong>自选列表中的全部标的</strong>依次运行策略引擎并交由 DeepSeek 生成审核；结合账户与持仓。通过后按审核单向 Gate 执行。<strong>停止交易</strong>会先中止正在进行的批量审核再关闭交易。</p>
+              <div class="deepseek-bind-row">
+                <input type="password" id="deepseek-key-input" class="deepseek-key-input" placeholder="DeepSeek API Key" autocomplete="off" />
+                <button type="button" class="btn-save-deepseek" id="btn-save-deepseek">保存</button>
+              </div>
+              <div id="deepseek-key-status" class="deepseek-key-status"></div>
+              <div class="order-audit-custody-toolbar" role="group" aria-label="托管跟单">
+                <div class="order-audit-custody-toolbar-left">
+                  <label class="custody-limit-label">
+                    托管每日最多开仓
+                    <input type="number" id="custody-max-opens-input" class="custody-max-opens-input" min="0" max="9999" step="1" value="0" placeholder="0" />
+                    次
+                  </label>
+                  <span class="custody-limit-hint">0=不限制</span>
+                  <span id="custody-executed-today" class="custody-executed-today" aria-live="polite"></span>
+                  <button type="button" class="btn-save-deepseek" id="btn-custody-save-limit">保存</button>
+                </div>
+                <div class="order-audit-custody-toolbar-right">
+                  <button type="button" class="btn-save-deepseek" id="btn-custody-start">托管跟单</button>
+                  <button type="button" class="btn-save-deepseek" id="btn-custody-stop" hidden>停止托管</button>
+                </div>
+              </div>
+              <div class="order-audit-status-bar order-audit-status-bar--stopped" id="order-audit-status-bar" role="status" aria-live="polite">审核已停止</div>
+              <div id="custody-status-text" class="custody-status-footline"></div>
+            </div>
+            <div id="order-audit-list" class="order-audit-list"></div>
+          </aside>
+          <div class="nav-panel-widget" id="nav-panel-widget" aria-label="资产净值">
+            <div class="nav-panel-header">
+              <h4>资产净值</h4>
+              <span class="nav-panel-sub">随持仓与行情刷新</span>
+            </div>
+            <div class="nav-scope-tabs" role="group" aria-label="净值账户类型">
+              <button type="button" class="nav-scope-btn active" data-nav-scope="spot">现货账户</button>
+              <button type="button" class="nav-scope-btn" data-nav-scope="futures">合约账户</button>
+            </div>
+            <div class="nav-panel-body">
+              <div class="nav-big-row">
+                <span class="nav-label">当前净值 (USDT)</span>
+                <span class="nav-value" id="nav-current">--</span>
+              </div>
+              <div class="nav-mid-row">
+                <span id="nav-return" class="nav-return">累计收益率 --</span>
+                <span class="nav-sep">·</span>
+                <span>初始 <strong id="nav-initial">--</strong></span>
+              </div>
+              <div class="nav-foot" id="nav-foot">上次更新：--</div>
+            </div>
+            <div class="nav-panel-trading-row" aria-label="交易开关">
+              <span id="trading-status-label" class="trading-status-label trading-status-label--nav">交易：未运行</span>
+              <button type="button" class="btn-trading-toggle btn-trading-toggle--nav" id="btn-trading-toggle" data-running="false">开始交易</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
   <script src="../../js/config.js"></script>
   <script src="../../js/api.js"></script>
   <script src="kline-chart.js"></script>
+  <script src="kline-order-overlays.js"></script>
   <script src="watchlist.js"></script>
+  <script src="quick-trade.js"></script>
+  <script src="order-audit.js"></script>
+  <script src="trading-ledger.js"></script>
   <script src="coin-selector.js"></script>
 </body>
 </html>

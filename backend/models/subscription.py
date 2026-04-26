@@ -9,7 +9,8 @@ class Subscription(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    strategy_id = Column(Integer, nullable=False)
+    strategy_id = Column(Integer, nullable=False, default=0)  # 0 = 用户自定义策略，见 user_strategy_id
+    user_strategy_id = Column(Integer, ForeignKey("user_strategies.id"), nullable=True, index=True)
     mode = Column(String(16), nullable=False)  # real | simulated
     params_json = Column(Text)
     status = Column(String(16), default="active")  # active | paused | cancelled

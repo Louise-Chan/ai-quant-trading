@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <title>账户总览</title>
   <link rel="stylesheet" href="../../css/account.css">
+  <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
   <div id="toast-container"></div>
   <div class="account-page">
     <p class="account-mode-label"><span id="account-mode-label">模拟账户</span> <a href="#" id="btn-debug" class="debug-link">诊断</a></p>
+    <div id="mirror-banner" class="mirror-banner" style="display:none;"></div>
     <div id="diagnose-output" class="diagnose-output hidden"></div>
     <section class="portfolio-section">
       <div class="section-header">
@@ -19,6 +21,7 @@
       </div>
       <div id="portfolio-summary" class="portfolio-summary"></div>
       <div id="nav-chart" class="nav-chart"></div>
+      <p id="nav-chart-caption" class="nav-chart-caption" style="display:none;"></p>
     </section>
     <section class="assets-section">
       <div class="section-header">

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from core.security import decode_token
 from models.user import User
+from services.preference_extra import set_extra_key, get_deepseek_api_key
 
 router = APIRouter()
 
@@ -19,6 +20,11 @@ def get_current_user_id(authorization: str = Header(None)) -> int | None:
 class UpdateUserBody(BaseModel):
     nickname: str = None
     avatar: str = None
+
+
+class UserPreferencesBody(BaseModel):
+    """DeepSeek Key 传空字符串表示清除"""
+    deepseek_api_key: str | None = None
 
 
 @router.get("/me")
@@ -57,3 +63,28 @@ def update_me(body: UpdateUserBody, authorization: str = Header(None), db: Sessi
         user.avatar = body.avatar
     db.commit()
     return {"success": True, "data": None, "message": "更新成功", "code": 200}
+
+
+@router.get("/preferences")
+def get_preferences(authorization: str = Header(None), db: Session = Depends(get_db)):
+    uid = get_current_user_id(authorization)
+    if not uid:
+        return {"success": False, "data": None, "message": "请先登录", "code": 401}
+    has_ds = bool(get_deepseek_api_key(db, uid))
+    return {
+        "success": True,
+        "data": {"has_deepseek_key": has_ds},
+        "message": "ok",
+        "code": 200,
+    }
+
+
+@router.put("/preferences")
+def put_preferences(body: UserPreferencesBody, authorization: str = Header(None), db: Session = Depends(get_db)):
+    uid = get_current_user_id(authorization)
+    if not uid:
+        return {"success": False, "data": None, "message": "请先登录", "code": 401}
+    if body.deepseek_api_key is not None:
+        set_extra_key(db, uid, "deepseek_api_key", body.deepseek_api_key)
+    has_ds = bool(get_deepseek_api_key(db, uid))
+    return {"success": True, "data": {"has_deepseek_key": has_ds}, "message": "已保存", "code": 200}

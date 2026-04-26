@@ -7,8 +7,101 @@
 </head>
 <body>
   <div class="strategy-page">
+    <nav class="strategy-nav" aria-label="策略子页">
+      <a href="index.html" class="strategy-nav-link strategy-nav-link--active">策略中心</a>
+      <a href="backtest.html" class="strategy-nav-link">可视化回测</a>
+    </nav>
+    <section class="runtime-section">
+      <h2>策略运行状态</h2>
+      <p class="runtime-hint">在仪表盘点击「开始交易」前，请在此选择要关联的<strong>已订阅策略</strong>（须与当前交易模式一致）。DeepSeek 风险预设见下方「专属风险设置」。</p>
+      <div class="runtime-bar">
+        <span id="runtime-status-text" class="runtime-status-text">加载中…</span>
+      </div>
+      <div class="runtime-select-row">
+        <label for="select-run-subscription">当前运行策略（订阅）</label>
+        <select id="select-run-subscription" class="runtime-select">
+          <option value="">— 请选择 —</option>
+        </select>
+        <button type="button" class="btn-runtime-apply" id="btn-set-active-subscription">设为当前运行策略</button>
+      </div>
+      <p class="runtime-footnote">提示：仪表盘「开始交易」后会自动生成订单审核，您再在侧栏人工通过/不通过；此处状态供引擎与后续自动化使用。</p>
+    </section>
+
+    <section class="risk-section">
+      <h2>专属风险设置</h2>
+      <p class="risk-hint">不同策略有<strong>不同的风险上限</strong>。可先使用 DeepSeek 生成的低/中/高预设，再拖动调节。数值不可超过该策略上限。</p>
+      <div class="risk-select-row">
+        <label for="select-risk-subscription">选择订阅以编辑风控</label>
+        <select id="select-risk-subscription" class="runtime-select">
+          <option value="">— 请选择 —</option>
+        </select>
+        <button type="button" class="btn-deepseek-presets" id="btn-deepseek-risk-presets">DeepSeek 生成低/中/高预设</button>
+      </div>
+      <div id="deepseek-analysis" class="deepseek-analysis" style="display:none;"></div>
+      <div id="risk-presets-row" class="risk-presets-row" style="display:none;"></div>
+      <div id="risk-editor" class="risk-editor" style="display:none;">
+        <div class="risk-caps-display" id="risk-caps-display"></div>
+        <div class="risk-field">
+          <label>最大总仓位比例 <span id="lbl-max-pos"></span></label>
+          <input type="range" id="range-max-position" min="1" max="100" step="1" />
+        </div>
+        <div class="risk-field">
+          <label>止损幅度（负数，绝对值越大越宽） <span id="lbl-stop-loss"></span></label>
+          <input type="range" id="range-stop-loss" min="1" max="100" step="1" />
+        </div>
+        <div class="risk-field">
+          <label>单笔最大仓位比例 <span id="lbl-max-single"></span></label>
+          <input type="range" id="range-max-single" min="1" max="100" step="1" />
+        </div>
+        <button type="button" class="btn-save-risk" id="btn-save-risk">保存风控参数</button>
+      </div>
+      <p id="risk-placeholder" class="empty">请选择上方订阅以查看与调节参数。</p>
+    </section>
+
+    <section class="analytics-section" id="analytics-section">
+      <div class="analytics-head">
+        <h2>策略引擎 · 模型分析专业报告</h2>
+        <p class="analytics-hint">在本地 PC 运行后端引擎，定期刷新下列表格。含<strong>预测模型</strong>（逻辑回归上涨概率 / holdout 准确率）、<strong>风险模型</strong>（夏普、回撤、波动）、<strong>归因模型</strong>（因子权重 × ICIR 代理）。评分 0–100 仅供相对比较，非投资建议。</p>
+        <div class="analytics-toolbar">
+          <label class="analytics-field">标的 <input type="text" id="analytics-symbols" placeholder="留空则使用仪表盘现货自选" autocomplete="off" /></label>
+          <label class="analytics-field">周期
+            <select id="analytics-interval">
+              <option value="1h">1h</option>
+              <option value="4h">4h</option>
+              <option value="1d">1d</option>
+              <option value="15m">15m</option>
+            </select>
+          </label>
+          <button type="button" class="btn-analytics-refresh" id="btn-analytics-refresh">立即刷新</button>
+          <span id="analytics-status" class="analytics-status" aria-live="polite"></span>
+        </div>
+      </div>
+      <div id="analytics-err" class="analytics-err" hidden></div>
+      <div class="analytics-score-row" id="analytics-score-row">
+        <div class="score-card"><span class="score-name">预测模型</span><strong id="score-pred">—</strong><span class="score-sub">综合分</span></div>
+        <div class="score-card"><span class="score-name">风险模型</span><strong id="score-risk">—</strong><span class="score-sub">综合分</span></div>
+        <div class="score-card"><span class="score-name">归因模型</span><strong id="score-attr">—</strong><span class="score-sub">综合分</span></div>
+      </div>
+      <h3 class="analytics-subtitle">预测模型明细</h3>
+      <div class="report-table-wrap"><table class="report-table" id="tbl-pred"><thead><tr><th>标的</th><th>模型</th><th>p(涨)</th><th>Holdout 准确率</th><th>训练行数</th><th>评分</th><th>说明</th></tr></thead><tbody></tbody></table></div>
+      <h3 class="analytics-subtitle">风险模型明细</h3>
+      <div class="report-table-wrap"><table class="report-table" id="tbl-risk"><thead><tr><th>标的</th><th>夏普(近似)</th><th>最大回撤</th><th>实现波动</th><th>Kelly 建议</th><th>评分</th><th>说明</th></tr></thead><tbody></tbody></table></div>
+      <h3 class="analytics-subtitle">归因模型明细（因子层）</h3>
+      <div class="report-table-wrap"><table class="report-table" id="tbl-attr"><thead><tr><th>标的</th><th>权重 Top 因子</th><th>加权 ICIR 代理</th><th>评分</th><th>说明</th></tr></thead><tbody></tbody></table></div>
+      <div id="analytics-formal-wrap" class="analytics-formal-wrap" hidden>
+        <h3 class="analytics-subtitle">Brinson-Fachler 组合归因（≥2 标的）</h3>
+        <p class="analytics-hint" id="analytics-brinson-bench"></p>
+        <div class="report-table-wrap"><table class="report-table" id="tbl-brinson"><thead><tr><th>配置效应(累计)</th><th>选股效应(累计)</th><th>交互效应(累计)</th><th>主动收益(累计)</th><th>分解校验和</th></tr></thead><tbody><tr></tr></tbody></table></div>
+        <h3 class="analytics-subtitle">正式风险模型（Σ = BFB′ + D，组合层）</h3>
+        <div class="report-table-wrap"><table class="report-table" id="tbl-formal-risk"><thead><tr><th>组合单期波动(σ)</th><th>跟踪误差(σ)</th><th>VaR95(正态·单期)</th><th>样本长度</th><th>主要风险贡献</th></tr></thead><tbody><tr></tr></tbody></table></div>
+      </div>
+    </section>
+
     <section class="strategies-section">
-      <h2>策略列表</h2>
+      <div class="strategies-section-head">
+        <h2>策略列表</h2>
+        <button type="button" class="btn-strategy-create" id="btn-strategy-create">创建策略</button>
+      </div>
       <div id="strategy-list" class="strategy-list"></div>
     </section>
     <section class="subscriptions-section">

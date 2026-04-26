@@ -1,28 +1,121 @@
 {
-  "name": "ai-quant-trading",
+  "name": "silentsigma",
   "version": "1.0.0",
-  "description": "AI量化交易平台",
+  "description": "SilentSigma 套利者 - AI 量化交易桌面客户端",
   "main": "main/main.js",
   "scripts": {
     "start": "npx electron .",
-    "build": "electron-builder",
-    "build:win": "electron-builder --win"
+    "generate:icons": "node scripts/generate-icons.js",
+    "build": "electron-builder --win",
+    "build:win": "electron-builder --win",
+    "build:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1",
+    "build:gui-installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-gui-installer.ps1",
+    "prepare:python": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-python-bundle.ps1",
+    "build:gui-installer:cn": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-gui-installer.ps1 -UseChinaMirror",
+    "build:installer:cn": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1 -UseChinaMirror"
   },
-  "keywords": ["electron", "quant", "trading"],
-  "author": "",
+  "keywords": [
+    "electron",
+    "quant",
+    "trading"
+  ],
+  "author": "SilentSigma",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "jimp": "^1.6.1",
+    "png-to-ico": "^3.0.1"
   },
   "dependencies": {
     "lightweight-charts": "^4.1.0"
   },
   "build": {
-    "appId": "com.aiquant.trading",
-    "productName": "AI量化交易平台",
+    "appId": "com.silentsigma.app",
+    "productName": "SilentSigma",
+    "copyright": "Copyright © 2026 SilentSigma",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "package.json",
+      "!**/.DS_Store",
+      "!**/Thumbs.db",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/*.pyo",
+          "!.venv/**",
+          "!venv/**",
+          "!.env",
+          "!ai_quant.db",
+          "!ai_quant.db-*",
+          "!*.log",
+          "!pyrightconfig.json",
+          "!**/*.md"
+        ]
+      },
+      {
+        "from": "python_runtime",
+        "to": "python_runtime",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/*.pyo",
+          "!**/tests/**",
+          "!**/test/**"
+        ]
+      }
+    ],
+    "asar": true,
+    "asarUnpack": [],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "SilentSigma-Setup-${version}-${env.BUILD_TS}.exe",
+      "executableName": "SilentSigma",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "SilentSigma",
+      "menuCategory": "SilentSigma",
+      "uninstallDisplayName": "SilentSigma 套利者",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh",
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "language": "2052",
+      "displayLanguageSelector": false,
+      "multiLanguageInstaller": true
     }
   }
 }

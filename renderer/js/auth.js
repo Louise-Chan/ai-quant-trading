@@ -6,27 +6,42 @@ const msgEl = document.getElementById('auth-message');
 const statusEl = document.getElementById('backend-status');
 
 /** 检测后端连接，仅接受 gate-v2 (8081/8080/8000/8001) */
+async function fetchJsonWithTimeout(url, opts, timeoutMs) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs || 2500);
+  try {
+    const res = await fetch(url, { ...(opts || {}), signal: ac.signal });
+    const text = await res.text();
+    return text ? JSON.parse(text) : {};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function detectBackend() {
   const ports = [8081, 8080, 8000, 8001];
   if (statusEl) {
     statusEl.className = 'backend-status checking';
     statusEl.textContent = '正在检测后端连接...';
   }
-  for (const port of ports) {
+  const checks = ports.map(async (port) => {
     try {
-      const res = await fetch(`http://127.0.0.1:${port}/api/v1/health`);
-      const data = await res.json();
+      const data = await fetchJsonWithTimeout(`http://127.0.0.1:${port}/api/v1/health`, {}, 1200);
       const ver = data?.data?.backend_version;
-      if (data && data.success && ver === 'gate-v2') {
-        window.API_BASE = `http://127.0.0.1:${port}/api/v1`;
-        if (statusEl) {
-          statusEl.className = 'backend-status ok';
-          statusEl.textContent = '✓ 后端已连接 (gate-v2 端口 ' + port + ')';
-        }
-        document.getElementById('btn-retry')?.classList.add('hidden');
-        return true;
-      }
+      if (data && data.success && ver === 'gate-v2') return port;
     } catch (_) {}
+    return null;
+  });
+  const results = await Promise.all(checks);
+  const okPort = results.find((x) => x != null);
+  if (okPort) {
+    window.API_BASE = `http://127.0.0.1:${okPort}/api/v1`;
+    if (statusEl) {
+      statusEl.className = 'backend-status ok';
+      statusEl.textContent = '✓ 后端已连接 (gate-v2 端口 ' + okPort + ')';
+    }
+    document.getElementById('btn-retry')?.classList.add('hidden');
+    return true;
   }
   if (statusEl) {
     statusEl.className = 'backend-status fail';
@@ -69,12 +84,11 @@ formLogin.addEventListener('submit', async (e) => {
   const password = fd.get('password');
   try {
     const base = (window.API_BASE || 'http://127.0.0.1:8081/api/v1');
-    const res = await fetch(`${base}/auth/login`, {
+    const data = await fetchJsonWithTimeout(`${base}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
+    }, 15000);
     if (data.success && data.data?.token) {
       const token = data.data.token;
       if (window.electronAPI?.store?.set) await window.electronAPI.store.set('token', token);
@@ -103,12 +117,11 @@ formRegister.addEventListener('submit', async (e) => {
   const email = fd.get('email') || undefined;
   try {
     const base = (window.API_BASE || 'http://127.0.0.1:8081/api/v1');
-    const res = await fetch(`${base}/auth/register`, {
+    const data = await fetchJsonWithTimeout(`${base}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password, email }),
-    });
-    const data = await res.json();
+    }, 15000);
     if (data.success && data.data?.token) {
       const token = data.data.token;
       if (window.electronAPI?.store?.set) await window.electronAPI.store.set('token', token);

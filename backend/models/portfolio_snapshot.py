@@ -13,4 +13,6 @@ class PortfolioSnapshot(Base):
     total_return = Column(Numeric(10, 4))
     date = Column(Date, nullable=False)
     mode = Column(String(16), default="real")
+    # spot | futures — 与现货/合约账户净值分别记账
+    account_scope = Column(String(16), default="spot", nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

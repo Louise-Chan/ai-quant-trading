@@ -34,6 +34,55 @@
       if (typeof window.initTradingModeSwitcher === 'function') window.initTradingModeSwitcher();
       updateTime();
       setInterval(updateTime, 60000);
+
+      // 启动时：异步刷新用户因子库（每次打开都触发；后端会复用 pending/running job）
+      try {
+        const noticeEl = document.getElementById('global-factor-refresh-notice');
+        const showNotice = (text) => {
+          if (!noticeEl) return;
+          noticeEl.hidden = false;
+          noticeEl.textContent = text || '';
+        };
+        const interval = localStorage.getItem('backtest_last_interval') || '1h';
+        (async () => {
+          if (!window.api?.strategyEngine?.factorLibraryRefreshAsync || !window.api?.strategyEngine?.factorLibraryRefreshStatus) return;
+          const startTs = Date.now();
+          const timeoutMs = 15 * 60 * 1000; // 最多等待 15 分钟
+          try {
+            showNotice('正在更新因子库…');
+            const res = await window.api.strategyEngine.factorLibraryRefreshAsync({
+              interval,
+              candidate_count: 50,
+              top_keep: 10,
+              lib_cap_n: 30,
+              user_prompt: '',
+            });
+            if (!res.success || !res.data?.job_id) throw new Error(res.message || '提交失败');
+            const jobId = res.data.job_id;
+            while (true) {
+              if (Date.now() - startTs > timeoutMs) {
+                showNotice('因子库更新超时，请稍后重试');
+                return;
+              }
+              const stRes = await window.api.strategyEngine.factorLibraryRefreshStatus(jobId);
+              if (!stRes.success) throw new Error(stRes.message || '查询状态失败');
+              const d = stRes.data || {};
+              const st = d.status;
+              if (st === 'done') {
+                showNotice(d.user_message || '因子库已更新完成');
+                break;
+              }
+              if (st === 'failed') {
+                showNotice(d.error_message ? `因子库更新失败：${d.error_message}` : '因子库更新失败');
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 2500));
+            }
+          } catch (e) {
+            showNotice(e?.message || String(e));
+          }
+        })();
+      } catch (_) {}
     });
 
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
@@ -45,15 +94,31 @@
 
     const navItems = document.querySelectorAll('.nav-item');
     const frames = document.querySelectorAll('.page-frame');
+    const notifyActivated = (page) => {
+      try {
+        const targetFrame = Array.from(frames).find((f) => f.dataset.page === page);
+        targetFrame?.contentWindow?.postMessage(
+          { type: 'page-activated', page, ts: Date.now() },
+          '*',
+        );
+      } catch (_) {}
+    };
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const page = item.dataset.page;
+        const prevFrame = document.querySelector('.page-frame.active');
+        if (prevFrame && prevFrame.dataset.page === 'strategy' && page !== 'strategy') {
+          try {
+            prevFrame.contentWindow?.postMessage({ type: 'strategy-iframe-hidden' }, '*');
+          } catch (_) {}
+        }
         navItems.forEach(n => n.classList.remove('active'));
         item.classList.add('active');
         frames.forEach(f => {
           f.classList.toggle('active', f.dataset.page === page);
         });
+        notifyActivated(page);
       });
     });
   }
@@ -82,23 +147,37 @@
   const formLogin = document.getElementById('form-login');
   const formRegister = document.getElementById('form-register');
 
+  async function fetchWithTimeout(url, opts, timeoutMs) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs || 3000);
+    try {
+      return await fetch(url, { ...(opts || {}), signal: ac.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function detectBackend(viewName) {
     const statusEl = document.getElementById('backend-status-' + (viewName === 'auth-login' ? 'login' : 'register'));
     const retryBtn = document.getElementById('btn-retry-' + (viewName === 'auth-login' ? 'login' : 'register'));
     const ports = [8081, 8080, 8000, 8001];
     if (statusEl) { statusEl.className = 'backend-status checking'; statusEl.textContent = '正在检测后端连接...'; }
     if (retryBtn) retryBtn.classList.add('hidden');
-    for (const port of ports) {
+    const checks = ports.map(async (port) => {
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/health`);
+        const res = await fetchWithTimeout(`http://127.0.0.1:${port}/api/v1/health`, {}, 1200);
         const data = await res.json();
         const ver = data?.data?.backend_version;
-        if (data && data.success && ver === 'gate-v2') {
-          window.API_BASE = `http://127.0.0.1:${port}/api/v1`;
-          if (statusEl) { statusEl.className = 'backend-status ok'; statusEl.textContent = '✓ 后端已连接 (gate-v2 端口 ' + port + ')'; }
-          return true;
-        }
+        if (data && data.success && ver === 'gate-v2') return port;
       } catch (_) {}
+      return null;
+    });
+    const results = await Promise.all(checks);
+    const okPort = results.find((x) => x != null);
+    if (okPort) {
+      window.API_BASE = `http://127.0.0.1:${okPort}/api/v1`;
+      if (statusEl) { statusEl.className = 'backend-status ok'; statusEl.textContent = '✓ 后端已连接 (gate-v2 端口 ' + okPort + ')'; }
+      return true;
     }
     if (statusEl) {
       statusEl.className = 'backend-status fail';
@@ -131,13 +210,21 @@
 
   async function doLogin(username, password) {
     const base = window.API_BASE || 'http://127.0.0.1:8081/api/v1';
-    const res = await fetch(`${base}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+    const res = await fetchWithTimeout(
+      `${base}/auth/login`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) },
+      15000
+    );
     return safeJson(res);
   }
 
   async function doRegister(username, password, email) {
     const base = window.API_BASE || 'http://127.0.0.1:8081/api/v1';
-    const res = await fetch(`${base}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, email }) });
+    const res = await fetchWithTimeout(
+      `${base}/auth/register`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, email }) },
+      15000
+    );
     return safeJson(res);
   }
 

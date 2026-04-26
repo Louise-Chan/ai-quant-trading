@@ -1,0 +1,542 @@
+/* SilentSigma 套利者 · 币安（Binance）风品牌样式
+ * 设计原则：
+ *   - 主色就一种 —— 币安黄 #F0B90B（CTA 色卡一致）
+ *   - 字体：sans-serif 粗体，英文略紧字距，中文宽松字距
+ *   - 不用金属渐变、不用盘金花边，只保留一个币安标志性的 45° 旋转小黄方块作为视觉锚点
+ *   - 顶栏 logo 和欢迎/登录页大标题共享同一结构，仅尺寸差异，做到「样式统一」
+ */
+
+:root {
+  --sig-yellow: #f0b90b;           /* Binance Yellow */
+  --sig-yellow-bright: #fcd535;    /* Binance 亮黄（悬停/高光） */
+  --sig-black: #181a20;            /* Binance 黑色字 */
+  --sig-gray: #707a8a;             /* Binance 次级灰字 */
+  --sig-line: rgba(240, 185, 11, 0.35);
+}
+
+/* ---------- 通用：品牌容器（顶栏 logo + 页面大标题共用相同内部结构） ---------- */
+.logo.brand-gold-black,
+.brand-gold-title {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  user-select: none;
+  -webkit-app-region: no-drag;
+  /* 清除外层 h1 默认的文字色，避免影响子元素 */
+  color: var(--sig-black);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.logo.brand-gold-black .brand-en,
+.brand-gold-title .brand-en {
+  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.005em;   /* 英文略紧字距，几何感 */
+  color: var(--sig-black);
+  background: none;
+  -webkit-text-fill-color: var(--sig-black);
+  text-shadow: none;
+}
+
+.logo.brand-gold-black .brand-zh,
+.brand-gold-title .brand-zh {
+  font-family: 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei',
+    'Noto Sans SC', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;     /* 中文略宽字距，和英文平衡 */
+  color: var(--sig-gray);
+  background: none;
+  -webkit-text-fill-color: var(--sig-gray);
+  text-shadow: none;
+}
+
+/* 分隔标记：45° 旋转的币安黄小方块 —— 品牌视觉锚点 */
+.logo.brand-gold-black .brand-sep,
+.brand-gold-title .brand-sep {
+  display: inline-block;
+  background: var(--sig-yellow);
+  transform: rotate(45deg);
+  border-radius: 1px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(240, 185, 11, 0.35);
+  height: auto;
+  width: auto;
+}
+
+/* ---------- 顶栏 logo（紧凑尺寸） ---------- */
+.logo.brand-gold-black {
+  gap: 0.6rem;
+  font-size: 0.95rem;
+}
+.logo.brand-gold-black .brand-en {
+  font-size: 1rem;
+}
+.logo.brand-gold-black .brand-zh {
+  font-size: 0.85rem;
+  padding-bottom: 1px;  /* 视觉对齐英文基线 */
+}
+.logo.brand-gold-black .brand-sep {
+  width: 8px;
+  height: 8px;
+}
+
+/* ---------- 欢迎页 / 登录页大标题（放大尺寸 · 结构相同） ---------- */
+.brand-gold-title {
+  gap: 0.85rem;
+  padding: 0.15rem 0 0.3rem;
+  font-size: 1.55rem;
+}
+.brand-gold-title .brand-en {
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+.brand-gold-title .brand-zh {
+  font-size: 1.2rem;
+  padding-bottom: 2px;
+}
+.brand-gold-title .brand-sep {
+  width: 13px;
+  height: 13px;
+}
+
+/* 清除先前版本留下的黄金装饰线（若 :has() 支持仍会追加金色边，这里显式取消） */
+.welcome-card:has(.brand-gold-title),
+.auth-card:has(.brand-gold-title) {
+  border-top: none;
+  border-image: none;
+}
+.brand-gold-title::after {
+  content: none;
+}
+
+/* ---------- 移动端/窄窗口保险：缩一点尺寸 ---------- */
+@media (max-width: 540px) {
+  .brand-gold-title .brand-en { font-size: 1.4rem; }
+  .brand-gold-title .brand-zh { font-size: 1rem; }
+  .brand-gold-title .brand-sep { width: 10px; height: 10px; }
+}
+
+/* ========== 欢迎 / 登录 / 注册 页面美化 · 币安深色风 ========== */
+
+/* 金币雨 canvas：铺满视口，作为最底层背景 */
+#coin-rain {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
+/* 三个装饰 view 设为透明，让下层 body 深色 + canvas 金币透上来 */
+#view-welcome,
+#view-auth-login,
+#view-auth-register {
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 卡片：浮在金币雨之上，使用传统柔和阴影，无金色边框 */
+#view-welcome .welcome-card,
+#view-auth-login .auth-card,
+#view-auth-register .auth-card {
+  position: relative;
+  z-index: 2;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2.5rem;
+  min-width: 360px;
+  max-width: 440px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  -webkit-app-region: no-drag;
+}
+
+/* 欢迎卡片文字 */
+#view-welcome .welcome-card h1 {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+#view-welcome .welcome-card p {
+  color: var(--sig-gray);
+  font-size: 0.92rem;
+  text-align: center;
+  margin: 0.6rem 0 2rem;
+  letter-spacing: 0.02em;
+}
+
+/* 登录/注册卡片小标题（"登录" / "注册"） */
+#view-auth-login .auth-card > h1,
+#view-auth-register .auth-card > h1 {
+  color: var(--sig-black);
+  font-size: 1.35rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.35rem;
+  letter-spacing: 0.05em;
+}
+
+/* 按钮优化：币安黄主按钮 + 悬停亮黄 */
+#view-welcome .btn-primary,
+#view-auth-login .btn-primary,
+#view-auth-register .btn-primary {
+  background: var(--sig-yellow);
+  color: var(--sig-black);
+  font-weight: 600;
+  padding: 0.7rem 1.6rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(240, 185, 11, 0.3);
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+#view-welcome .btn-primary:hover,
+#view-auth-login .btn-primary:hover,
+#view-auth-register .btn-primary:hover {
+  background: var(--sig-yellow-bright);
+  box-shadow: 0 6px 18px rgba(240, 185, 11, 0.42);
+}
+#view-welcome .btn-primary:active,
+#view-auth-login .btn-primary:active,
+#view-auth-register .btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(240, 185, 11, 0.3);
+}
+
+#view-welcome .btn-secondary {
+  background: #fff;
+  color: var(--sig-black);
+  border: 1px solid #e6e8eb;
+  font-weight: 600;
+  padding: 0.7rem 1.6rem;
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s;
+}
+#view-welcome .btn-secondary:hover {
+  background: #f7f8fa;
+  border-color: var(--sig-yellow);
+}
+
+/* 登录/注册 tab 样式 */
+#view-auth-login .auth-tabs .tab.active,
+#view-auth-register .auth-tabs .tab.active {
+  background: var(--sig-yellow);
+  border-color: var(--sig-yellow);
+  color: var(--sig-black);
+}
+
+/* 表单输入框：聚焦黄色高亮 */
+#view-auth-login .auth-form input,
+#view-auth-register .auth-form input {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #e6e8eb;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  background: #fafbfc;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+#view-auth-login .auth-form input:focus,
+#view-auth-register .auth-form input:focus {
+  border-color: var(--sig-yellow);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(240, 185, 11, 0.18);
+  outline: none;
+}
+
+/* 返回按钮：透明底 + 悬停金边 */
+#view-auth-login .btn-back,
+#view-auth-register .btn-back {
+  color: var(--sig-gray);
+  border: 1px solid #e6e8eb;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0.55rem;
+  font-size: 0.88rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+#view-auth-login .btn-back:hover,
+#view-auth-register .btn-back:hover {
+  border-color: var(--sig-yellow);
+  color: var(--sig-black);
+  background: rgba(240, 185, 11, 0.06);
+}
+
+/* 底部切换链接 */
+#view-auth-login .auth-switch a,
+#view-auth-register .auth-switch a {
+  color: var(--sig-yellow);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+#view-auth-login .auth-switch a:hover,
+#view-auth-register .auth-switch a:hover {
+  color: var(--sig-yellow-bright);
+  text-decoration: underline;
+}
+
+/* 后端状态条：保留功能性色彩，但和深色底搭配 */
+#view-auth-login .backend-status,
+#view-auth-register .backend-status {
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.78rem;
+  padding: 0.5rem;
+}
+
+/* 欢迎/登录/注册页激活时：白底配两处极淡金色光晕做点缀，保留干净配色；
+ * view 为透明，让 canvas 金币雨在 body 白色背景上显示。
+ * 主界面激活时规则不命中，body 回退到 app-unified.css 里的 #f0f2f5 浅灰。 */
+body:has(#view-welcome.active),
+body:has(#view-auth-login.active),
+body:has(#view-auth-register.active) {
+  background:
+    radial-gradient(1200px 700px at 15% -10%, rgba(240, 185, 11, 0.08), transparent 60%),
+    radial-gradient(900px 600px at 110% 110%, rgba(240, 185, 11, 0.06), transparent 55%),
+    #ffffff;
+  background-attachment: fixed;
+}
+
+/* ===================================================================
+ * 欢迎 / 登录 / 注册 —— 中央卡片及字样整体放大约 1.4×
+ * （仅作用于这三个视图，顶栏 logo 和主界面不受影响）
+ * =================================================================== */
+
+/* 卡片容器 */
+#view-welcome .welcome-card,
+#view-auth-login .auth-card,
+#view-auth-register .auth-card {
+  padding: 3.2rem;
+  min-width: 480px;
+  max-width: 580px;
+  border-radius: 16px;
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* 品牌大标题 */
+#view-welcome .brand-gold-title,
+#view-auth-login .brand-gold-title,
+#view-auth-register .brand-gold-title {
+  gap: 1.1rem;
+  padding: 0.2rem 0 0.4rem;
+  font-size: 2.1rem;
+}
+#view-welcome .brand-gold-title .brand-en,
+#view-auth-login .brand-gold-title .brand-en,
+#view-auth-register .brand-gold-title .brand-en {
+  font-size: 2.4rem;
+}
+#view-welcome .brand-gold-title .brand-zh,
+#view-auth-login .brand-gold-title .brand-zh,
+#view-auth-register .brand-gold-title .brand-zh {
+  font-size: 1.65rem;
+  padding-bottom: 3px;
+}
+#view-welcome .brand-gold-title .brand-sep,
+#view-auth-login .brand-gold-title .brand-sep,
+#view-auth-register .brand-gold-title .brand-sep {
+  width: 18px;
+  height: 18px;
+}
+
+/* 欢迎页副标题与按钮区 */
+#view-welcome .welcome-card h1 {
+  margin-bottom: 1rem;
+}
+#view-welcome .welcome-card p {
+  font-size: 1.25rem;
+  margin: 0.9rem 0 2.6rem;
+}
+#view-welcome .welcome-btns {
+  gap: 1.4rem;
+}
+
+/* 按钮（主/次） */
+#view-welcome .btn,
+#view-auth-login .btn,
+#view-auth-register .btn {
+  font-size: 1.25rem;
+  padding: 0.85rem 2.1rem;
+  border-radius: 11px;
+}
+#view-welcome .btn-primary,
+#view-auth-login .btn-primary,
+#view-auth-register .btn-primary {
+  padding: 0.95rem 2.25rem;
+  border-radius: 11px;
+  box-shadow: 0 5px 16px rgba(240, 185, 11, 0.28);
+}
+#view-welcome .btn-primary:hover,
+#view-auth-login .btn-primary:hover,
+#view-auth-register .btn-primary:hover {
+  box-shadow: 0 8px 24px rgba(240, 185, 11, 0.4);
+}
+#view-welcome .btn-secondary {
+  padding: 0.95rem 2.25rem;
+  border-radius: 11px;
+}
+
+/* 登录/注册页小标题 */
+#view-auth-login .auth-card > h1,
+#view-auth-register .auth-card > h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1.8rem;
+}
+
+/* tabs */
+#view-auth-login .auth-tabs,
+#view-auth-register .auth-tabs {
+  gap: 0.7rem;
+  margin-bottom: 2rem;
+}
+#view-auth-login .auth-tabs .tab,
+#view-auth-register .auth-tabs .tab {
+  padding: 0.7rem;
+  font-size: 1.2rem;
+  border-radius: 9px;
+}
+
+/* 输入表单 */
+#view-auth-login .auth-form,
+#view-auth-register .auth-form {
+  gap: 1rem;
+}
+#view-auth-login .auth-form input,
+#view-auth-register .auth-form input {
+  padding: 0.9rem 1rem;
+  font-size: 1.2rem;
+  border-radius: 11px;
+}
+#view-auth-login .auth-form input:focus,
+#view-auth-register .auth-form input:focus {
+  box-shadow: 0 0 0 4px rgba(240, 185, 11, 0.18);
+}
+
+/* 错误/提示信息 */
+#view-auth-login .auth-message,
+#view-auth-register .auth-message {
+  font-size: 1.15rem;
+  margin-top: 1.4rem;
+  min-height: 1.6em;
+}
+
+/* 后端状态条 */
+#view-auth-login .backend-status,
+#view-auth-register .backend-status {
+  font-size: 1rem;
+  padding: 0.7rem;
+  margin-bottom: 1.4rem;
+  border-radius: 11px;
+}
+
+/* 重试按钮 */
+#view-auth-login .btn-retry,
+#view-auth-register .btn-retry {
+  font-size: 1.05rem;
+  padding: 0.55rem 1.4rem;
+  margin: 0 auto 1.4rem;
+  border-radius: 9px;
+}
+
+/* 返回按钮 */
+#view-auth-login .btn-back,
+#view-auth-register .btn-back {
+  padding: 0.7rem;
+  font-size: 1.15rem;
+  margin-top: 1.4rem;
+  border-radius: 11px;
+}
+
+/* 底部切换链接 */
+#view-auth-login .auth-switch,
+#view-auth-register .auth-switch {
+  font-size: 1.2rem;
+  margin-top: 1.4rem;
+}
+
+/* 窄屏降级：防止卡片被窗口裁切 */
+@media (max-width: 720px) {
+  #view-welcome .welcome-card,
+  #view-auth-login .auth-card,
+  #view-auth-register .auth-card {
+    min-width: 0;
+    max-width: 92vw;
+    padding: 2.2rem;
+  }
+}
+
+/* ===================================================================
+ * 卡片充能动画（与 coin-rain.js 的磁石吸收节奏同步）
+ *   - 每 3s 触发一次，动画时长 3s
+ *   - 震动 + 逐渐放大（充能蓄势）
+ *   - 外发光金边由弱到强（"勾边闪烁金光"），末尾迅速回落
+ * =================================================================== */
+@keyframes cardCharging {
+  0% {
+    transform: scale(1) translate(0, 0);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+  }
+  5% {
+    transform: scale(1.004) translate(-1px, 1px);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(240, 185, 11, 0.3),
+                0 0 18px rgba(240, 185, 11, 0.25);
+  }
+  12% {
+    transform: scale(1.008) translate(1px, -1px);
+  }
+  20% {
+    transform: scale(1.014) translate(-1.5px, 1.5px);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1),
+                0 0 0 2px rgba(240, 185, 11, 0.5),
+                0 0 30px rgba(240, 185, 11, 0.4);
+  }
+  30% {
+    transform: scale(1.02) translate(1.5px, 1px);
+  }
+  42% {
+    transform: scale(1.028) translate(-2px, -1.5px);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1),
+                0 0 0 3px rgba(240, 185, 11, 0.7),
+                0 0 48px rgba(240, 185, 11, 0.6);
+  }
+  55% {
+    transform: scale(1.034) translate(2px, 1.5px);
+  }
+  68% {
+    transform: scale(1.04) translate(-2.5px, 1px);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1),
+                0 0 0 4px rgba(252, 213, 53, 0.85),
+                0 0 68px rgba(240, 185, 11, 0.8);
+  }
+  80% {
+    transform: scale(1.048) translate(2.5px, -2px);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1),
+                0 0 0 5px rgba(252, 213, 53, 0.95),
+                0 0 84px rgba(240, 185, 11, 0.95);
+  }
+  90% {
+    /* 能量释放：边框瞬间最亮然后迅速回落 */
+    transform: scale(1.05) translate(0, 0);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1),
+                0 0 0 6px rgba(252, 213, 53, 1),
+                0 0 120px rgba(252, 213, 53, 1);
+  }
+  100% {
+    transform: scale(1) translate(0, 0);
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+  }
+}
+
+#view-welcome .welcome-card.card-charging,
+#view-auth-login .auth-card.card-charging,
+#view-auth-register .auth-card.card-charging {
+  animation: cardCharging 3s ease-in-out;
+  will-change: transform, box-shadow;
+}

@@ -41,7 +41,9 @@ def _covariance(x: list[float], y: list[float]) -> float:
     return sum((a - mx) * (b - my) for a, b in zip(x, y)) / len(x)
 
 
-def _get_portfolio_daily_returns(db: Session, uid: int, mode: str, days: int = 90) -> list[tuple[date, float]]:
+def _get_portfolio_daily_returns(
+    db: Session, uid: int, mode: str, account_scope: str = "spot", days: int = 90
+) -> list[tuple[date, float]]:
     """获取组合日收益率序列 [(date, return), ...]，return 为小数"""
     cutoff = date.today() - timedelta(days=days)
     snapshots = (
@@ -49,6 +51,7 @@ def _get_portfolio_daily_returns(db: Session, uid: int, mode: str, days: int = 9
         .filter(
             PortfolioSnapshot.user_id == uid,
             PortfolioSnapshot.mode == mode,
+            PortfolioSnapshot.account_scope == account_scope,
             PortfolioSnapshot.date >= cutoff,
         )
         .order_by(asc(PortfolioSnapshot.date))
@@ -145,16 +148,16 @@ def compute_alpha(
     return round(alpha_annual, 4)
 
 
-def compute_portfolio_metrics(db: Session, uid: int, mode: str) -> dict:
+def compute_portfolio_metrics(db: Session, uid: int, mode: str, account_scope: str = "spot") -> dict:
     """
     计算夏普、Beta、Alpha。
     返回 {"sharpe": float|None, "beta": float|None, "alpha": float|None}
     """
     result = {"sharpe": None, "beta": None, "alpha": None}
-    pr_tuples = _get_portfolio_daily_returns(db, uid, mode)
+    pr_tuples = _get_portfolio_daily_returns(db, uid, mode, account_scope)
     if len(pr_tuples) < MIN_DAYS:
         return result
-    bm_tuples = _get_benchmark_daily_returns(days=120, mode="real")
+    bm_tuples = _get_benchmark_daily_returns(days=120, mode=mode)
     if len(bm_tuples) < MIN_DAYS:
         return result
     pr_list, bm_list = _align_returns(pr_tuples, bm_tuples)

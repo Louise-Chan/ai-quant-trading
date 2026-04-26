@@ -6,9 +6,15 @@ from sqlalchemy.orm import Session
 
 from config import get_settings
 from core.database import engine, Base, get_db
+from core.schema_migrate import (
+    ensure_bracket_track_extra_columns,
+    ensure_default_builtin_user_strategies,
+    ensure_portfolio_watchlist_columns,
+    ensure_subscription_user_strategy_column,
+)
 from core.security import decode_token
 import models  # 确保模型已加载
-from api import auth, users, broker, dashboard, market, portfolio, assets, trading, strategies, subscription, risk
+from api import auth, users, broker, dashboard, market, portfolio, assets, trading, strategies, subscription, risk, order_audit, strategy_engine_api, user_strategies, backtest_runs, simulated_mirror
 from services.broker_service import get_broker, get_mode
 from services.gate_account_service import get_spot_accounts, get_total_balance_usdt
 from utils.gate_client import HOST_SIMULATED, HOST_REAL
@@ -16,13 +22,38 @@ from utils.gate_client import HOST_SIMULATED, HOST_REAL
 # 创建表（开发环境，MySQL 不可用时跳过）
 try:
     Base.metadata.create_all(bind=engine)
+    ensure_bracket_track_extra_columns()
+    ensure_portfolio_watchlist_columns()
+    ensure_subscription_user_strategy_column()
+    ensure_default_builtin_user_strategies()
     db_url = str(engine.url)
     if "sqlite" in db_url:
         print(f"[DB] SQLite 路径: {db_url.replace('sqlite:///', '')}")
 except Exception as e:
     print(f"[DB] 初始化失败，请检查 backend 目录可写: {e}")
 
-app = FastAPI(title="AI量化交易平台 API", version="1.0.0")
+try:
+    from services.bracket_track_worker import start_bracket_track_worker
+
+    start_bracket_track_worker(2.5)
+except Exception as _bw_err:
+    print(f"[bracket_track_worker] 未启动: {_bw_err}")
+
+try:
+    from services.factor_library_refresh_worker import start_factor_library_refresh_worker
+
+    start_factor_library_refresh_worker(6.0)
+except Exception as _flw_err:
+    print(f"[factor_library_refresh_worker] 未启动: {_flw_err}")
+
+try:
+    from services.trust_copier_service import start_trust_copier_worker
+
+    start_trust_copier_worker(25.0)
+except Exception as _tc_err:
+    print(f"[trust_copier_worker] 未启动: {_tc_err}")
+
+app = FastAPI(title="SilentSigma 套利者 API", version="1.0.0")
 settings = get_settings()
 
 app.add_middleware(
@@ -58,11 +89,16 @@ app.include_router(trading.router, prefix="/api/v1/trading", tags=["交易"])
 app.include_router(subscription.router, prefix="/api/v1/strategies", tags=["订阅"])
 app.include_router(strategies.router, prefix="/api/v1/strategies", tags=["策略"])
 app.include_router(risk.router, prefix="/api/v1/risk", tags=["风险"])
+app.include_router(order_audit.router, prefix="/api/v1/order-audit", tags=["订单审核"])
+app.include_router(strategy_engine_api.router, prefix="/api/v1/strategy-engine", tags=["策略引擎"])
+app.include_router(user_strategies.router, prefix="/api/v1/user-strategies", tags=["用户策略"])
+app.include_router(backtest_runs.router, prefix="/api/v1/backtest-runs", tags=["回测历史"])
+app.include_router(simulated_mirror.router, prefix="/api/v1/simulated-mirror", tags=["模拟账户镜像"])
 
 
 @app.get("/")
 def root():
-    return {"message": "AI量化交易平台 API", "version": "1.0.0"}
+    return {"message": "SilentSigma 套利者 API", "version": "1.0.0"}
 
 
 @app.get("/api/v1/health")

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>可视化回测 · 策略中心</title>
+  <link rel="stylesheet" href="../../css/strategy.css">
+  <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <div class="backtest-page">
+    <nav class="strategy-nav" aria-label="策略子页">
+      <a href="index.html" class="strategy-nav-link">策略中心</a>
+      <a href="backtest.html" class="strategy-nav-link strategy-nav-link--active">可视化回测</a>
+    </nav>
+
+    <section class="backtest-strategy-panel" aria-label="保存的策略">
+      <div class="bt-strategy-panel-hd">
+        <h2>策略列表</h2>
+        <p class="backtest-hint">完成回测后可保存到列表；在策略中心订阅并在仪表盘选择「运行订阅」后，可开启<strong>托管跟单</strong>（按本策略标的与因子自动执行，不经人工审核）。</p>
+      </div>
+      <div class="bt-strategy-panel-row bt-strategy-panel-row--stack">
+        <div id="bt-strategy-list" class="strategy-list bt-strategy-list--fullwidth"></div>
+        <div class="bt-strategy-panel-actions">
+          <button type="button" class="btn-ds btn-ds--secondary" id="bt-strategy-new">创建策略</button>
+          <label class="bt-strategy-name-wrap">名称 <input type="text" id="bt-strategy-name" placeholder="策略名称" maxlength="120" autocomplete="off" /></label>
+          <button type="button" class="btn-ds" id="bt-strategy-save">保存到列表</button>
+          <span id="bt-strategy-msg" class="bt-strategy-msg" role="status"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="backtest-card">
+      <h2>组合可视化回测</h2>
+      <p class="backtest-hint">使用本地后端策略引擎：对多个标的分别运行同一套多因子信号规则，再按等权平均合成<strong>组合净值</strong>；展示相对买入持有的 <strong>Alpha</strong>、近似 <strong>夏普</strong>，并列出统计上「贡献不显著」的标的（便于下次从组合中剔除），以及对各 <strong>因子作用评分</strong>（便于下次弱化或移除弱因子）。不含手续费与滑点。</p>
+      <div class="backtest-toolbar">
+        <label>标的（逗号分隔）<input type="text" id="bt-symbols" placeholder="留空 = 仪表盘现货自选" autocomplete="off" /></label>
+        <label>周期
+          <select id="bt-interval">
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+            <option value="1d">1d</option>
+            <option value="15m">15m</option>
+          </select>
+        </label>
+        <label>每天最多开仓
+          <input type="number" id="bt-max-opens-day" min="0" max="200" step="1" value="0" placeholder="0=不限制" />
+        </label>
+        <label>日均开仓口径
+          <select id="bt-avg-daily-mode">
+            <option value="trading">交易日</option>
+            <option value="natural">自然日</option>
+          </select>
+        </label>
+        <button type="button" class="btn-run-backtest" id="btn-run-backtest">运行回测</button>
+      </div>
+
+      <div class="bt-range-module" id="bt-range-module">
+        <div class="bt-range-module-head">
+          <span class="bt-range-module-title">回测时段</span>
+          <span class="backtest-hint">先选开始、再选结束；也可一键使用最近 K 线。选 15m 等细周期时请指定日期区间（约半年量级由后端按根数自动分页拉取）；仅点击「运行回测」时才会请求 K 线。</span>
+        </div>
+        <div class="bt-range-trip">
+          <div class="bt-range-leg">
+            <span class="bt-range-leg-label">开始</span>
+            <button type="button" class="bt-range-chip" id="bt-chip-start" aria-haspopup="dialog">选择日期</button>
+          </div>
+          <div class="bt-range-leg-mid" aria-hidden="true">
+            <span class="bt-range-dash"></span>
+          </div>
+          <div class="bt-range-leg">
+            <span class="bt-range-leg-label">结束</span>
+            <button type="button" class="bt-range-chip" id="bt-chip-end" aria-haspopup="dialog">选择日期</button>
+          </div>
+          <button type="button" class="bt-range-open-btn" id="bt-open-range-pop">打开日历</button>
+        </div>
+      </div>
+
+      <div id="bt-range-backdrop" class="bt-range-backdrop" hidden></div>
+      <div id="bt-range-popover" class="bt-range-popover" role="dialog" aria-modal="true" aria-labelledby="bt-range-pop-title" hidden>
+        <div class="bt-range-pop-hd">
+          <span id="bt-range-pop-title">选择回测日期</span>
+          <button type="button" class="bt-range-pop-close" id="bt-range-pop-close" aria-label="关闭">×</button>
+        </div>
+        <div class="bt-range-pop-tabs" role="tablist">
+          <button type="button" class="bt-range-tab is-active" data-which="start" role="tab" aria-selected="true">开始日期</button>
+          <button type="button" class="bt-range-tab" data-which="end" role="tab" aria-selected="false">结束日期</button>
+        </div>
+        <div class="bt-range-cals">
+          <div class="bt-cal-wrap" id="bt-cal-wrap-0"></div>
+          <div class="bt-cal-wrap" id="bt-cal-wrap-1"></div>
+        </div>
+        <div class="bt-range-pop-foot">
+          <button type="button" class="btn-ds btn-ds--secondary" id="bt-range-recent">使用最近 K 线（约 2000 根）</button>
+          <button type="button" class="btn-ds" id="bt-range-apply">完成</button>
+        </div>
+      </div>
+
+      <div id="bt-stale-banner" class="bt-stale-banner" hidden>因子勾选已变更，请重新点击「运行回测」以更新下方报告与图表。</div>
+
+      <div id="bt-factor-panel" class="bt-factor-panel">
+        <div class="bt-factor-col">
+          <h3 class="bt-subh">因子库</h3>
+          <p class="backtest-hint">仅<strong>勾选</strong>的因子参与多因子合成与回测；未勾选不参与。</p>
+          <button type="button" class="btn-ds btn-ds--secondary" id="bt-mine-factors-btn">挖掘因子（更新因子库）</button>
+          <div id="bt-factor-refresh-notice" class="backtest-hint" hidden style="white-space:pre-wrap;"></div>
+          <div id="bt-factor-lib" class="bt-factor-lib"></div>
+        </div>
+        <div class="bt-factor-col">
+          <h3 class="bt-subh">自选因子</h3>
+          <p class="backtest-hint">从因子库「加入自选」；此处可勾选是否参与回测，或移除出自选列表。</p>
+          <div id="bt-factor-fav" class="bt-factor-fav"></div>
+        </div>
+        <div class="bt-factor-col bt-factor-col--wide">
+          <h3 class="bt-subh">DeepSeek 筛因子</h3>
+          <p class="backtest-hint">需在用户偏好中配置 DeepSeek API Key。可描述预想策略，或使用「生成策略」让模型自拟逻辑后筛选因子；「优化」会结合最近一次回测摘要调整因子集。</p>
+          <div class="bt-ds-row">
+            <label class="bt-ds-label">模式
+              <select id="bt-ds-mode">
+                <option value="screen">按描述筛选</option>
+                <option value="generate">生成策略并选因子</option>
+                <option value="optimize">优化因子集</option>
+              </select>
+            </label>
+          </div>
+          <textarea id="bt-ds-prompt" class="bt-ds-prompt" rows="3" placeholder="例如：趋势跟踪、降低回撤、偏短线动量…（生成/优化模式可留空由模型推理）"></textarea>
+          <div class="bt-ds-actions">
+            <button type="button" class="btn-ds" id="bt-ds-run">执行</button>
+            <button type="button" class="btn-ds btn-ds--secondary" id="bt-ds-quick-gen">快速：生成策略</button>
+          </div>
+          <pre id="bt-ds-out" class="bt-ds-out" hidden></pre>
+        </div>
+      </div>
+
+      <div id="bt-err" class="analytics-err" hidden></div>
+      <div id="bt-metrics" class="backtest-metrics" style="display:none;"></div>
+
+      <section class="bt-runs-panel" id="bt-runs-panel">
+        <div class="bt-runs-head">
+          <h3 class="bt-subh">回测历史</h3>
+          <p class="backtest-hint">每次成功运行后自动保存；最多保留最近 60 条。点击「载入」可回到当时的组合净值图、开/平仓与细周期验真图。</p>
+        </div>
+        <div class="bt-runs-toolbar">
+          <label class="bt-runs-filter">
+            <input type="checkbox" id="bt-runs-only-current" /> 仅显示当前策略
+          </label>
+          <button type="button" class="btn-ds btn-ds--secondary" id="bt-runs-refresh">刷新</button>
+        </div>
+        <div id="bt-runs-list" class="bt-runs-list"></div>
+      </section>
+
+      <div id="backtest-chart-wrap"></div>
+      <p id="bt-chart-caption" class="backtest-chart-caption" hidden></p>
+
+      <section class="backtest-card bt-verify-section" id="bt-verify-section" style="display:none;" aria-label="K 线验真">
+        <h2>K 线验真（细周期与开平仓）</h2>
+        <p class="backtest-hint">在<strong>回测区间内</strong>任选起止日期拉取更细周期 K 线（跨度 1～7 日）：<strong>Buy / Sell</strong> 箭头与文字在 K 线<strong>下方 / 上方</strong>，<strong>深绿 / 深红圆点</strong>标在该根细 K 的<strong>开盘 / 收盘</strong>价位上；无对应细 K 时圆点回退为回测 bar 收盘价。信号在回测 K 线收盘后判定、收益计入下一根；不含手续费/滑点。</p>
+        <div class="bt-verify-toolbar">
+          <label>标的
+            <select id="bt-verify-symbol"></select>
+          </label>
+          <div class="bt-verify-range">
+            <span class="bt-verify-range-label">起始</span>
+            <button type="button" class="bt-range-chip" id="bt-verify-chip-start" aria-haspopup="dialog">选择日期</button>
+            <span class="bt-range-dash" aria-hidden="true"></span>
+            <span class="bt-verify-range-label">结束</span>
+            <button type="button" class="bt-range-chip" id="bt-verify-chip-end" aria-haspopup="dialog">选择日期</button>
+            <button type="button" class="bt-range-open-btn" id="bt-verify-open-pop">日历</button>
+          </div>
+          <label>细周期
+            <select id="bt-verify-detail-iv">
+              <option value="">自动（相对回测周期更细）</option>
+              <option value="15m">15m</option>
+              <option value="5m">5m</option>
+              <option value="1m">1m</option>
+              <option value="1h">1h</option>
+              <option value="4h">4h</option>
+            </select>
+          </label>
+          <button type="button" class="btn-ds" id="bt-verify-refresh">加载 K 线</button>
+          <span class="bt-verify-range-hint" aria-hidden="true">跨度 1～7 日 · 仅限本次回测区间</span>
+        </div>
+
+        <div id="bt-verify-backdrop" class="bt-range-backdrop" hidden></div>
+        <div id="bt-verify-popover" class="bt-range-popover" role="dialog" aria-modal="true" aria-labelledby="bt-verify-pop-title" hidden>
+          <div class="bt-range-pop-hd">
+            <span id="bt-verify-pop-title">选择验真时段</span>
+            <button type="button" class="bt-range-pop-close" id="bt-verify-pop-close" aria-label="关闭">×</button>
+          </div>
+          <div class="bt-range-pop-tabs" role="tablist">
+            <button type="button" class="bt-range-tab is-active" data-vwhich="start" role="tab" aria-selected="true">起始日期</button>
+            <button type="button" class="bt-range-tab" data-vwhich="end" role="tab" aria-selected="false">结束日期</button>
+          </div>
+          <div class="bt-cal-nav-bar" id="bt-verify-cal-nav-bar">
+            <button type="button" class="bt-cal-nav-btn" id="bt-verify-cal-prev" aria-label="上一组月份">‹</button>
+            <span id="bt-verify-cal-nav-label" class="bt-cal-nav-label"></span>
+            <button type="button" class="bt-cal-nav-btn" id="bt-verify-cal-next" aria-label="下一组月份">›</button>
+          </div>
+          <div class="bt-range-cals">
+            <div id="bt-verify-cal-wrap-0" class="bt-cal-wrap"></div>
+            <div id="bt-verify-cal-wrap-1" class="bt-cal-wrap"></div>
+          </div>
+          <div class="bt-range-pop-foot">
+            <span class="bt-verify-foot-hint" id="bt-verify-foot-hint">跨度 1～7 日，且必须落在回测区间内</span>
+            <button type="button" class="btn-ds" id="bt-verify-pop-apply">完成</button>
+          </div>
+        </div>
+
+        <p id="bt-verify-seg-label" class="bt-verify-seg-label" aria-live="polite"></p>
+        <div id="bt-verify-chart-wrap" class="bt-verify-chart-wrap"></div>
+        <p id="bt-verify-status" class="analytics-status"></p>
+      </section>
+
+      <div class="bt-report-agent" id="bt-report-agent">
+        <h3 class="bt-subh">DeepSeek 回测解读</h3>
+        <p class="backtest-hint">基于<strong>当前页最近一次回测</strong>的结构化摘要生成报告，不传输原始 K 线。需配置 DeepSeek API Key。</p>
+        <label class="bt-ds-label" for="bt-report-prompt">可选侧重</label>
+        <textarea id="bt-report-prompt" class="bt-ds-prompt" rows="2" placeholder="例如：更关注回撤与风险、用通俗语言概括因子作用…"></textarea>
+        <div class="bt-ds-actions">
+          <button type="button" class="btn-ds" id="bt-report-run">生成解读报告</button>
+        </div>
+        <pre id="bt-report-out" class="bt-ds-out bt-report-out" hidden></pre>
+      </div>
+      <p id="bt-status" class="analytics-status"></p>
+    </section>
+
+    <section class="backtest-card">
+      <h2>标的显著性分析（组合内边际作用）</h2>
+      <p class="backtest-hint">t 统计量过小、与组合相关性弱或收益占比低时，标「建议移除」——表示在该策略规则下盈利更像噪音，非稳定边缘。</p>
+      <div class="report-table-wrap">
+        <table class="report-table" id="tbl-sig">
+          <thead>
+            <tr>
+              <th>标的</th><th>开仓次数</th><th>t 统计量</th><th>累计收益</th><th>与组合相关</th><th>收益占比代理</th><th>运气风险</th><th>建议移除</th><th>结论</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="backtest-card" id="bt-brinson-section" style="display:none;">
+      <h2>Brinson-Fachler 组合归因</h2>
+      <p class="backtest-hint" id="bt-brinson-bench"></p>
+      <div class="report-table-wrap">
+        <table class="report-table" id="tbl-bt-brinson">
+          <thead><tr><th>配置(累计)</th><th>选股(累计)</th><th>交互(累计)</th><th>主动收益</th></tr></thead>
+          <tbody><tr></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="backtest-card" id="bt-formal-risk-section" style="display:none;">
+      <h2>正式风险模型（Σ = BFB′ + D）</h2>
+      <p class="backtest-hint">单期波动、跟踪误差、VaR 与当前 K 线周期一致；为简化因子（市场/截面波动/滞后动量）估计。</p>
+      <div class="report-table-wrap">
+        <table class="report-table" id="tbl-bt-risk">
+          <thead><tr><th>σ 组合</th><th>跟踪误差</th><th>VaR95</th><th>主要风险贡献</th></tr></thead>
+          <tbody><tr></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="backtest-card">
+      <h2>因子作用效果评分</h2>
+      <p class="backtest-hint">仅展示<strong>当前回测已勾选且参与合成</strong>的因子；换勾选项并重新回测后，本表与上方净值/显著性会一并更新。</p>
+      <div class="report-table-wrap">
+        <table class="report-table" id="tbl-factors">
+          <thead>
+            <tr>
+              <th>因子</th><th>平均 ICIR</th><th>平均 IC 均值</th><th>平均权重</th><th>作用评分</th><th>建议移除</th><th>备注</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="backtest-disclaimer" id="bt-disclaimer"></p>
+    </section>
+  </div>
+  <script src="../../js/config.js"></script>
+  <script src="../../js/api.js"></script>
+  <script src="backtest.js"></script>
+</body>
+</html>

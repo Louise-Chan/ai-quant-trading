@@ -1,5 +1,101 @@
 /** 账户总览 - 模拟/实盘切换时实时刷新 */
 const NA = '--';  // 暂无数据时显示
+const ACCOUNT_SCOPE_KEY = 'dashboard_nav_account_scope';
+
+let _navChart = null;
+let _navSeries = null;
+
+function destroyNavChart() {
+  if (_navChart) {
+    try { _navChart.remove(); } catch (_) {}
+  }
+  _navChart = null;
+  _navSeries = null;
+}
+
+function renderNavChart(points, opts) {
+  const host = document.getElementById('nav-chart');
+  const capEl = document.getElementById('nav-chart-caption');
+  if (!host) return;
+  const arr = Array.isArray(points) ? points.filter(p => Number.isFinite(Number(p?.nav))) : [];
+  if (!arr.length || typeof LightweightCharts === 'undefined') {
+    destroyNavChart();
+    host.classList.remove('has-data');
+    host.innerHTML = `<p class="chart-placeholder">${opts?.placeholder || NA}</p>`;
+    if (capEl) { capEl.style.display = 'none'; capEl.textContent = ''; }
+    return;
+  }
+  destroyNavChart();
+  host.innerHTML = '<div class="nav-chart-canvas"></div>';
+  host.classList.add('has-data');
+  const canvas = host.querySelector('.nav-chart-canvas');
+  _navChart = LightweightCharts.createChart(canvas, {
+    layout: {
+      background: { color: '#f8f9fa' },
+      textColor: '#1a1a2e',
+      attributionLogo: false,
+    },
+    grid: { vertLines: { color: '#e9ecef' }, horzLines: { color: '#e9ecef' } },
+    rightPriceScale: { borderVisible: false },
+    timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+    width: canvas.clientWidth || 600,
+    height: 260,
+  });
+  _navSeries = _navChart.addAreaSeries({
+    lineColor: '#e6ac00',
+    topColor: 'rgba(255, 193, 7, 0.35)',
+    bottomColor: 'rgba(255, 193, 7, 0.02)',
+    lineWidth: 2,
+    priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+  });
+  const seen = new Set();
+  const data = [];
+  for (const p of arr) {
+    const t = Number(p.t || p.ts || 0);
+    if (!Number.isFinite(t) || t <= 0 || seen.has(t)) continue;
+    seen.add(t);
+    data.push({ time: t, value: Number(p.nav) });
+  }
+  data.sort((a, b) => a.time - b.time);
+  if (!data.length) {
+    destroyNavChart();
+    host.classList.remove('has-data');
+    host.innerHTML = `<p class="chart-placeholder">${opts?.placeholder || NA}</p>`;
+    if (capEl) { capEl.style.display = 'none'; capEl.textContent = ''; }
+    return;
+  }
+  _navSeries.setData(data);
+  _navChart.timeScale().fitContent();
+  if (capEl) {
+    const caption = opts?.caption || '';
+    capEl.style.display = caption ? 'block' : 'none';
+    capEl.textContent = caption;
+  }
+  window.addEventListener('resize', () => {
+    if (_navChart && canvas) {
+      try { _navChart.applyOptions({ width: canvas.clientWidth || 600 }); } catch (_) {}
+    }
+  }, { once: true });
+}
+
+async function queryMirrorStatus() {
+  if (!window.api?.simulatedMirror?.status) return null;
+  try {
+    const res = await window.api.simulatedMirror.status();
+    const d = res?.data || {};
+    return d.enabled && d.backtest_run_id ? d : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function getAccountScope() {
+  try {
+    return localStorage.getItem(ACCOUNT_SCOPE_KEY) === 'futures' ? 'futures' : 'spot';
+  } catch (_) {
+    return 'spot';
+  }
+}
 function fmt(v, type) {
   if (v === null || v === undefined) return NA;
   if (type === 'pct') return (v * 100).toFixed(2) + '%';
@@ -21,8 +117,22 @@ function showToast(msg, duration = 3000) {
   setTimeout(() => { el.remove(); }, duration);
 }
 
+let _mirrorDefaultApplied = false;
+
 async function refreshAll() {
   await loadBrokerStatus();
+  const mirror = await queryMirrorStatus();
+  if (mirror && !_mirrorDefaultApplied) {
+    const openBtn = document.querySelector('.filter-btn[data-status="open"]');
+    const finBtn = document.querySelector('.filter-btn[data-status="finished"]');
+    if (openBtn && finBtn) {
+      openBtn.classList.remove('active');
+      finBtn.classList.add('active');
+      _mirrorDefaultApplied = true;
+    }
+  } else if (!mirror) {
+    _mirrorDefaultApplied = false;
+  }
   const mode = currentMode;
   loadPortfolio(mode);
   loadBalance(mode);
@@ -45,15 +155,14 @@ async function loadBrokerStatus() {
 async function loadPortfolio(mode) {
   if (!window.api) return;
   const el = document.getElementById('portfolio-summary');
-  const chartEl = document.getElementById('nav-chart');
   const emptyHtml = `<div class="stat"><span>初始资金</span><strong>${NA}</strong></div><div class="stat"><span>当前净值</span><strong>${NA}</strong></div><div class="stat"><span>累计收益</span><strong>${NA}</strong></div><div class="stat"><span>年化收益</span><strong>${NA}</strong></div><div class="stat"><span>最大回撤</span><strong>${NA}</strong></div><div class="stat"><span>夏普比率</span><strong>${NA}</strong></div><div class="stat"><span>Beta</span><strong>${NA}</strong></div><div class="stat"><span>Alpha</span><strong>${NA}</strong></div>`;
   try {
-    const res = await window.api.portfolio.summary(mode || currentMode);
+    const res = await window.api.portfolio.summary(mode || currentMode, getAccountScope());
     const d = res.data || {};
-    if (d.data_source !== 'gate') {
+    if (d.current_nav == null && d.initial_capital == null) {
       el.innerHTML = emptyHtml;
-      if (chartEl) chartEl.innerHTML = `<p class="chart-placeholder">${NA}</p>`;
-      showToast('无法获取账户信息', 3000);
+      renderNavChart(null, { placeholder: NA });
+      showToast(res.message || '无法获取账户信息', 3000);
       return;
     }
     el.innerHTML = `
@@ -66,11 +175,35 @@ async function loadPortfolio(mode) {
       <div class="stat"><span>Beta</span><strong>${fmt(d.beta, 'num2')}</strong></div>
       <div class="stat"><span>Alpha</span><strong>${fmt(d.alpha, 'pct')}</strong></div>
     `;
-    if (chartEl) chartEl.innerHTML = d.current_nav != null ? '<p class="chart-placeholder">净值走势（暂无历史数据）</p>' : `<p class="chart-placeholder">${NA}</p>`;
+    await loadNavHistory(mode);
   } catch (e) {
     el.innerHTML = emptyHtml;
-    if (chartEl) chartEl.innerHTML = `<p class="chart-placeholder">${NA}</p>`;
-    showToast('无法获取账户信息', 3000);
+    renderNavChart(null, { placeholder: NA });
+    showToast(e.message || '无法获取账户信息', 3000);
+  }
+}
+
+async function loadNavHistory(mode) {
+  if (!window.api?.portfolio?.navHistory) {
+    renderNavChart(null, { placeholder: '净值走势（暂无历史数据）' });
+    return;
+  }
+  try {
+    const res = await window.api.portfolio.navHistory(mode || currentMode, getAccountScope());
+    const list = Array.isArray(res?.data) ? res.data : [];
+    const src = (res?.meta?.data_source) || '';
+    const pts = list
+      .map(p => ({ t: Number(p.ts || p.t || 0), nav: Number(p.nav) }))
+      .filter(p => Number.isFinite(p.nav));
+    if (pts.length >= 2) {
+      renderNavChart(pts, {
+        caption: src === 'simulated_mirror' ? '数据来自回测镜像：按当前净值等比缩放的回测净值曲线' : '',
+      });
+    } else {
+      renderNavChart(null, { placeholder: '净值走势（暂无历史数据）' });
+    }
+  } catch (_) {
+    renderNavChart(null, { placeholder: '净值走势（暂无历史数据）' });
   }
 }
 
@@ -79,11 +212,11 @@ async function loadBalance(mode) {
   const el = document.getElementById('assets-balance');
   const emptyHtml = `<div class="stat"><span>USDT余额</span><strong>${NA}</strong></div><div class="stat"><span>今日盈亏</span><strong>${NA}</strong></div>`;
   try {
-    const res = await window.api.assets.balance(mode || currentMode);
+    const res = await window.api.assets.balance(mode || currentMode, getAccountScope());
     const d = res.data || {};
-    if (d.data_source !== 'gate') {
+    if (d.available == null && d.total == null) {
       el.innerHTML = emptyHtml;
-      showToast('无法获取账户信息', 3000);
+      showToast(res.message || '无法获取账户信息', 3000);
       return;
     }
     const av = d.available != null && d.available !== '' ? Number(d.available) : null;
@@ -94,7 +227,7 @@ async function loadBalance(mode) {
     `;
   } catch (e) {
     el.innerHTML = emptyHtml;
-    showToast('无法获取账户信息', 3000);
+    showToast(e.message || '无法获取账户信息', 3000);
   }
 }
 
@@ -164,10 +297,48 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 refreshAll();
 
-// 监听交易模式切换（模拟/实盘），实时刷新账户数据
+// 监听交易模式切换（模拟/实盘）与回测镜像启用/关闭，实时刷新账户数据
 window.addEventListener('message', (e) => {
-  if (e.data?.type === 'trading-mode-changed') refreshAll();
+  const t = e?.data?.type;
+  if (t === 'trading-mode-changed' || t === 'simulated-mirror-changed') {
+    refreshAll();
+  } else if (t === 'page-activated' && e?.data?.page === 'account') {
+    // 父窗口通知"账户 tab 被激活" → 强制拉取最新数据，兜底所有广播失效的场景
+    refreshAll();
+  }
 });
+// 主通道：BroadcastChannel 收到镜像变更
+try {
+  const bc = new BroadcastChannel('simulated-mirror');
+  bc.addEventListener('message', (e) => {
+    if (e?.data?.type === 'simulated-mirror-changed') refreshAll();
+  });
+} catch (_) {}
+// 跟随仪表盘资产净值切换（spot/futures），以及镜像变更的 storage 信号
+window.addEventListener('storage', (e) => {
+  if (e.key === ACCOUNT_SCOPE_KEY) refreshAll();
+  if (e.key === 'simulated-mirror-bump') refreshAll();
+});
+// 最后兜底：账户 iframe 可见时，若镜像状态与上次不同则刷新
+let _lastMirrorRunId = 0;
+(async () => {
+  const s0 = await queryMirrorStatus();
+  _lastMirrorRunId = s0 ? Number(s0.backtest_run_id || 0) : 0;
+})();
+async function pollMirrorChange() {
+  if (document.hidden) return;
+  const s = await queryMirrorStatus();
+  const rid = s ? Number(s.backtest_run_id || 0) : 0;
+  if (rid !== _lastMirrorRunId) {
+    _lastMirrorRunId = rid;
+    refreshAll();
+  }
+}
+setInterval(pollMirrorChange, 3000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) pollMirrorChange();
+});
+window.addEventListener('focus', () => refreshAll());
 
 // 暴露给父窗口：切换到账户页时也可触发刷新
 window.refreshAccountData = refreshAll;

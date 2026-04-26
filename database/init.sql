@@ -1,4 +1,4 @@
--- AI量化交易平台 - MySQL 建表脚本
+-- SilentSigma 套利者 - MySQL 建表脚本
 -- 执行前请先创建数据库: CREATE DATABASE ai_quant_trading DEFAULT CHARSET utf8mb4;
 
 USE ai_quant_trading;

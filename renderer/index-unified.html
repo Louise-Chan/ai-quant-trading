@@ -3,13 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI量化交易平台</title>
+  <title>SilentSigma 套利者</title>
   <link rel="stylesheet" href="css/app-unified.css">
+  <link rel="stylesheet" href="css/brand.css">
 </head>
 <body class="alpaca-theme">
+  <canvas id="coin-rain" aria-hidden="true"></canvas>
   <div id="view-welcome" class="view active">
     <div class="welcome-card">
-      <h1>AI量化交易平台</h1>
+      <h1 class="brand-gold-title">
+        <span class="brand-en">SilentSigma</span>
+        <span class="brand-sep" aria-hidden="true"></span>
+        <span class="brand-zh">套利者</span>
+      </h1>
       <p>面向散户投资者的一站式量化交易服务</p>
       <div class="welcome-btns">
         <button id="btn-login" class="btn btn-primary">登录</button>
@@ -52,10 +58,19 @@
   </div>
 
   <div id="view-main" class="view">
+    <div
+      id="global-factor-refresh-notice"
+      hidden
+      style="position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:9999;max-width:720px;white-space:pre-wrap;padding:0.75rem 1rem;border-radius:10px;background:#fff8e1;border:1px solid #ffecb3;color:#856404;box-shadow:0 4px 18px rgba(0,0,0,0.08);"
+    ></div>
     <div class="app-layout">
       <header class="app-header">
         <div class="header-left">
-          <span class="logo">AI量化交易</span>
+          <span class="logo brand-gold-black" aria-label="SilentSigma 套利者">
+            <span class="brand-en">SilentSigma</span>
+            <span class="brand-sep" aria-hidden="true"></span>
+            <span class="brand-zh">套利者</span>
+          </span>
           <span class="header-divider" aria-hidden="true"></span>
           <div class="trading-mode-switcher" id="trading-mode-switcher"></div>
         </div>
@@ -91,6 +106,7 @@
     </div>
   </div>
 
+  <script src="js/coin-rain.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/trading-mode-switcher.js"></script>

@@ -1,6 +1,8 @@
 """Gate.io 账户数据服务 - 投资组合、资产、订单、持仓、成交"""
-from gate_api import SpotApi
-from utils.gate_client import get_client, list_tickers
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
+
+from gate_api import SpotApi, FuturesApi
+from utils.gate_client import get_client, get_spot_ticker_last, list_tickers
 
 
 def _to_dict(obj):
@@ -19,9 +21,9 @@ def get_spot_accounts(mode: str, api_key: str, api_secret: str):
     文档: https://www.gate.io/docs/developers/apiv4/zh_CN/#%E6%9F%A5%E8%AF%A2%E8%B5%84%E4%BA%A7%E4%BF%A1%E6%81%AF
 
     地址说明:
-    - 实盘: api.gateio.ws
-    - 模拟(Testnet Key): api-testnet.gateapi.io (testnet.gate.io 创建)
-    - 模拟(主站模拟账户 Key): 需设 GATE_SIMULATED_HOST=https://api.gateio.ws/api/v4
+    - 实盘: api.gate.com/api/v4（默认，见 utils.gate_client.HOST_REAL）
+    - 模拟(Testnet Key): api-testnet.gateapi.io (testnet 创建)
+    - 模拟(主站模拟账户 Key): 需设 GATE_SIMULATED_HOST=https://api.gate.com/api/v4
     """
     client = get_client(mode, api_key, api_secret)
     api = SpotApi(client)
@@ -132,6 +134,60 @@ def get_my_trades(mode: str, api_key: str, api_secret: str, currency_pair: str =
         raise  # 认证/网络错误向上传播
 
 
+def get_spot_order(mode: str, api_key: str, api_secret: str, order_id: str, currency_pair: str) -> dict | None:
+    """查询单个现货订单状态"""
+    try:
+        client = get_client(mode, api_key, api_secret)
+        api = SpotApi(client)
+        o = api.get_order(order_id=order_id, currency_pair=currency_pair)
+        d = _to_dict(o) or {}
+        amt = d.get("amount")
+        left = d.get("left")
+        try:
+            fa = float(amt or 0) - float(left or 0)
+        except (TypeError, ValueError):
+            fa = 0.0
+        return {
+            "id": d.get("id"),
+            "status": d.get("status"),
+            "side": d.get("side"),
+            "amount": amt,
+            "left": left,
+            "price": d.get("price"),
+            "filled_base": fa,
+            "finish_as": d.get("finish_as"),
+            "create_time": d.get("create_time"),
+            "avg_deal_price": d.get("avg_deal_price"),
+        }
+    except Exception:
+        return None
+
+
+def amend_spot_order_price(
+    mode: str,
+    api_key: str,
+    api_secret: str,
+    order_id: str,
+    currency_pair: str,
+    price: str,
+) -> None:
+    """修改现货限价单价格（用于止损/止盈保护单改价）"""
+    from gate_api.models import OrderPatch
+
+    client = get_client(mode, api_key, api_secret)
+    api = SpotApi(client)
+    patch = OrderPatch(
+        currency_pair=currency_pair,
+        account="spot",
+        price=str(price).strip(),
+    )
+    api.amend_order(
+        order_id=str(order_id),
+        order_patch=patch,
+        currency_pair=currency_pair,
+    )
+
+
 def cancel_order(mode: str, api_key: str, api_secret: str, order_id: str, currency_pair: str):
     """撤单"""
     try:
@@ -141,6 +197,117 @@ def cancel_order(mode: str, api_key: str, api_secret: str, order_id: str, curren
         return True
     except Exception:
         return False
+
+
+def cancel_all_spot_open_orders_for_pair(
+    mode: str, api_key: str, api_secret: str, currency_pair: str, max_pages: int = 30
+) -> tuple[list[str], list[str]]:
+    """
+    撤销指定交易对下所有当前未成交现货挂单。
+    返回 (成功撤单的 order_id 列表, 失败信息列表)
+    """
+    cp = (currency_pair or "").strip().upper()
+    if not cp:
+        return [], ["empty symbol"]
+    cancelled: list[str] = []
+    errors: list[str] = []
+    seen: set[str] = set()
+    for page in range(1, max_pages + 1):
+        batch = get_open_orders(mode, api_key, api_secret, page=page, limit=100)
+        if not batch:
+            break
+        for o in batch:
+            sym = (o.get("symbol") or "").strip().upper()
+            if sym != cp:
+                continue
+            oid = o.get("id")
+            if oid is None:
+                continue
+            sid = str(oid)
+            if sid in seen:
+                continue
+            seen.add(sid)
+            try:
+                if cancel_order(mode, api_key, api_secret, sid, cp):
+                    cancelled.append(sid)
+                else:
+                    errors.append(f"撤单失败 order_id={sid}")
+            except Exception as ex:
+                errors.append(f"撤单异常 order_id={sid}: {ex}")
+        if len(batch) < 100:
+            break
+    return cancelled, errors
+
+
+def market_sell_all_base_for_pair(
+    mode: str, api_key: str, api_secret: str, currency_pair: str
+) -> dict:
+    """
+    将该交易对基础币可用+冻结余额全部市价卖出（用于一键平仓现货多头）。
+    返回 { "order_id": str|None, "amount": str|None, "skipped": bool, "error": str|None }
+    """
+    cp = (currency_pair or "").strip().upper()
+    out: dict = {"order_id": None, "amount": None, "skipped": True, "error": None}
+    if "_" not in cp:
+        out["error"] = "无效交易对"
+        return out
+    base = cp.split("_")[0]
+    accounts = get_spot_accounts(mode, api_key, api_secret)
+    amt = 0.0
+    for a in accounts or []:
+        if (a.get("currency") or "") == base:
+            amt = float(a.get("available") or 0) + float(a.get("locked") or 0)
+            break
+    if amt <= 0:
+        return out
+    d = Decimal(str(amt))
+    s = format(d.normalize(), "f").rstrip("0").rstrip(".")
+    if not s or s == "0":
+        return out
+    out["amount"] = s
+    out["skipped"] = False
+    try:
+        oid, _raw = create_spot_order(mode, api_key, api_secret, cp, "sell", "market", s, None)
+        out["order_id"] = str(oid) if oid is not None else None
+    except Exception as ex:
+        out["error"] = str(ex)
+    return out
+
+
+def close_spot_symbol_flat(
+    mode: str, api_key: str, api_secret: str, currency_pair: str
+) -> dict:
+    """
+    一键结束某现货标的：撤销该交易对全部挂单，再市价卖出全部基础币持仓。
+    """
+    cancelled, cancel_errs = cancel_all_spot_open_orders_for_pair(mode, api_key, api_secret, currency_pair)
+    sell_res = market_sell_all_base_for_pair(mode, api_key, api_secret, currency_pair)
+    return {
+        "symbol": (currency_pair or "").strip().upper(),
+        "cancelled_order_ids": cancelled,
+        "cancel_errors": cancel_errs,
+        "market_sell": sell_res,
+    }
+
+
+def get_futures_usdt_total_balance(mode: str, api_key: str, api_secret: str) -> tuple[float, float, float]:
+    """
+    U 本位合约账户总资产（USDT 计价）。返回 (available, frozen, total)
+    接口: GET /futures/{settle}/accounts
+    """
+    client = get_client(mode, api_key, api_secret)
+    api = FuturesApi(client)
+    acc = api.list_futures_accounts("usdt")
+    if not acc:
+        return 0.0, 0.0, 0.0
+    d = _to_dict(acc) or {}
+    try:
+        total = float(d.get("total") or 0)
+        avail = float(d.get("available") or 0)
+    except (TypeError, ValueError):
+        return 0.0, 0.0, 0.0
+    frozen = max(0.0, total - avail)
+    return avail, frozen, total
 
 
 def get_total_balance_usdt(mode: str, api_key: str, api_secret: str) -> tuple[float, float, float]:
@@ -209,3 +376,132 @@ def get_positions_with_value(mode: str, api_key: str, api_secret: str) -> list:
             "value_usdt": value_usdt,
         })
     return result
+
+
+# Gate 现货常见最小成交额（USDT 计价）；以接口返回为准，略抬高避免舍入踩线
+MIN_SPOT_ORDER_QUOTE_USDT = Decimal("3.01")
+
+
+def _fmt_spot_base_amount(d: Decimal) -> str:
+    s = format(d, "f").rstrip("0").rstrip(".")
+    return s if s else "0"
+
+
+def adjust_spot_amount_min_quote_usdt(
+    mode: str,
+    api_key: str,
+    api_secret: str,
+    currency_pair: str,
+    amount_str: str,
+    order_type: str,
+    limit_price_str: str | None,
+    side: str,
+) -> tuple[str, str | None]:
+    """
+    若 amount * 参考价 低于 Gate 现货最小成交额（约 3 USDT），则提高数量至满足下限。
+    限价单用委托价；市价或无有效价时用最新成交价估算。
+    返回 (调整后的数量字符串, 若有调整则为说明文案)。
+    """
+    cp = (currency_pair or "").strip().upper()
+    st = (side or "").lower()
+    ot = (order_type or "limit").lower()
+    try:
+        amt = Decimal(str(amount_str).strip().replace(",", ""))
+    except Exception:
+        return str(amount_str).strip(), None
+    if amt <= 0:
+        return str(amount_str).strip(), None
+
+    px_f: float | None = None
+    if ot == "limit" and limit_price_str and str(limit_price_str).strip():
+        try:
+            px_f = float(str(limit_price_str).strip().replace(",", ""))
+        except ValueError:
+            px_f = None
+    if px_f is None or px_f <= 0:
+        px_f = get_spot_ticker_last(mode, cp)
+    if px_f is None or px_f <= 0:
+        return _fmt_spot_base_amount(amt), None
+
+    px = Decimal(str(px_f))
+    min_q = MIN_SPOT_ORDER_QUOTE_USDT
+    notional = amt * px
+    if notional >= min_q:
+        return _fmt_spot_base_amount(amt), None
+
+    target = (min_q / px) * Decimal("1.006")
+    target = target.quantize(Decimal("0.00000001"), rounding=ROUND_UP)
+
+    accounts = get_spot_accounts(mode, api_key, api_secret)
+    base_cur = cp.split("_")[0] if "_" in cp else ""
+
+    if st == "sell":
+        max_base = Decimal("0")
+        for a in accounts or []:
+            if (a.get("currency") or "") == base_cur:
+                max_base = Decimal(str(a.get("available", 0))) + Decimal(str(a.get("locked", 0)))
+                break
+        if max_base <= 0:
+            raise ValueError(
+                "无法执行：该笔卖出折合不足 3 USDT，且账户中无可卖基础币；请提高数量或先买入/划转。"
+            )
+        if target > max_base:
+            target = max_base.quantize(Decimal("0.00000001"), rounding=ROUND_DOWN)
+        if target <= 0 or target * px < min_q:
+            raise ValueError(
+                f"无法执行：当前可卖基础币折合仍不足 Gate 最小成交额 3 USDT（约需再多卖一些或换流动性更好的对）。"
+            )
+    elif st == "buy":
+        usdt_av = Decimal("0")
+        for a in accounts or []:
+            if (a.get("currency") or "") == "USDT":
+                usdt_av = Decimal(str(a.get("available", 0)))
+                break
+        need = target * px
+        if need > usdt_av:
+            raise ValueError(
+                f"无法执行：为满足最小成交额约 3 USDT，需约 {float(need):.2f} USDT，"
+                f"当前可用 USDT 约 {float(usdt_av):.2f}，请充值或减少其它冻结。"
+            )
+
+    orig = _fmt_spot_base_amount(amt)
+    out = _fmt_spot_base_amount(target)
+    note = f"数量已由 {orig} 调整为 {out}，以满足现货单笔最小成交额（约 3 USDT）。"
+    return out, note
+
+
+def create_spot_order(
+    mode: str,
+    api_key: str,
+    api_secret: str,
+    currency_pair: str,
+    side: str,
+    order_type: str,
+    amount: str,
+    price: str | None = None,
+):
+    """
+    现货下单。side: buy | sell；order_type: limit | market。
+    limit 必须提供 price；market 可不填 price（由交易所撮合）。
+    返回 (order_id, raw_dict)
+    """
+    from gate_api.models import Order as GateOrder
+
+    client = get_client(mode, api_key, api_secret)
+    api = SpotApi(client)
+    tif = "gtc" if (order_type or "").lower() == "limit" else "ioc"
+    kwargs = dict(
+        currency_pair=currency_pair,
+        type=order_type,
+        account="spot",
+        side=side,
+        amount=str(amount),
+        time_in_force=tif,
+    )
+    if price is not None and str(price).strip() != "":
+        kwargs["price"] = str(price)
+    ord_obj = GateOrder(**kwargs)
+    resp = api.create_order(ord_obj)
+    d = _to_dict(resp) or {}
+    oid = d.get("id")
+    return oid, d

@@ -1,0 +1,42 @@
+{
+  "appId": "com.silentsigma.installer",
+  "productName": "SilentSigma Installer",
+  "extraMetadata": {
+    "main": "installer_gui/main.js"
+  },
+  "directories": {
+    "output": "dist-installer-gui"
+  },
+  "files": [
+    "installer_gui/main.js",
+    "installer_gui/preload.js",
+    "installer_gui/index.html",
+    "installer_gui/renderer.js",
+    "installer_gui/styles.css",
+    "installer_gui/SilentSigmaLogo.png"
+  ],
+  "extraResources": [
+    {
+      "from": "installer_gui/payload",
+      "to": "payload",
+      "filter": [
+        "SilentSigma-Core-Setup.exe"
+      ]
+    }
+  ],
+  "asar": true,
+  "win": {
+    "target": [
+      {
+        "target": "portable",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "installer_gui/icon.ico",
+    "artifactName": "SilentSigma-Installer-GUI-${version}-${env.BUILD_TS}.exe",
+    "executableName": "SilentSigma Installer",
+    "requestedExecutionLevel": "asInvoker"
+  }
+}
